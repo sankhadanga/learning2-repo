@@ -3,44 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demo E-Commerce Website</title>
-    <link rel="stylesheet" href="style.css"> <!-- Link to external CSS -->
+    <title>Demo E-Commerce SPA</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
         <h1>Demo E-Commerce Store</h1>
     </header>
     <nav>
-        <a href="#">Home</a>
-        <a href="#">Shop</a>
-        <a href="#">Cart</a>
-        <a href="#">Contact</a>
+        <a href="#home" id="nav-home">Home</a>
+        <a href="#shop" id="nav-shop">Shop</a>
+        <a href="#cart" id="nav-cart">Cart <span id="cart-count">0</span></a>
+        <a href="#contact" id="nav-contact">Contact</a>
     </nav>
-    <main>
-        <section class="products">
-            <div class="product">
-                <img src="https://via.placeholder.com/200x150" alt="Product 1">
-                <h2>Product 1</h2>
-                <p>$19.99</p>
-                <button>Add to Cart</button>
-            </div>
-            <div class="product">
-                <img src="https://via.placeholder.com/200x150" alt="Product 2">
-                <h2>Product 2</h2>
-                <p>$29.99</p>
-                <button>Add to Cart</button>
-            </div>
-            <div class="product">
-                <img src="https://via.placeholder.com/200x150" alt="Product 3">
-                <h2>Product 3</h2>
-                <p>$39.99</p>
-                <button>Add to Cart</button>
-            </div>
-        </section>
+    <main id="app-content">
+        <!-- Content will be loaded here -->
     </main>
     <footer>
         &copy; 2025 Demo E-Commerce Store
     </footer>
-    <script src="theme.js"></script> <!-- Link to JS file -->
+    <script src="spa.js"></script>
 </body>
 </html>
