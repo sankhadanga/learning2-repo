@@ -34,11 +34,11 @@ const products = [
     },
     {
         id: 5,
-        name: "Black Oxford Shoes",
+        name: "Black Leather Jacket",
         price: 2199,
         color: "Black",
-        img: "https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=400&q=80",
-        desc: "Elegant black oxford shoes for formal occasions."
+        img: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=400&q=80",
+        desc: "Trendy black leather jacket for a bold and stylish look."
     },
     {
         id: 6,
@@ -114,11 +114,11 @@ const products = [
     },
     {
         id: 15,
-        name: "Black Woolen Gloves",
-        price: 299,
+        name: "Winter Jacket",
+        price: 2299,
         color: "Black",
-        img: "https://images.unsplash.com/photo-1513708927688-890fe41c2d40?auto=format&fit=crop&w=400&q=80",
-        desc: "Warm black gloves for winter protection."
+        img: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=400&q=80",
+        desc: "Warm and stylish black winter jacket, perfect for cold weather."
     },
     {
         id: 16,
@@ -128,14 +128,14 @@ const products = [
         img: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=400&q=80",
         desc: "Elegant yellow silk dupatta for festive occasions."
     },
-    {
-        id: 17,
-        name: "Brown Loafers",
-        price: 1799,
-        color: "Brown",
-        img: "https://images.unsplash.com/photo-1517260911205-8c6b8b6b7a88?auto=format&fit=crop&w=400&q=80",
-        desc: "Stylish brown loafers for casual and formal wear."
-    },
+  {
+    id: 17,
+    name: "Remote Control Toy Car",
+    price: 1499,
+    color: "Red",
+    img: "https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=400&q=80",
+    desc: "Fun and fast remote control toy car, perfect for kids and hobbyists."
+},
     {
         id: 18,
         name: "Pink Ethnic Skirt",
