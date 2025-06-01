@@ -224,13 +224,22 @@ function loadCart() {
 let cart = loadCart();
 
 function renderHome() {
-    let html = `<section class="products">`;
+    let html = `
+    <section class="hero-banner" style="background:linear-gradient(90deg,#f8fafc 60%,#e0e7ef 100%);padding:2.5em 1em 2em 1em;text-align:center;margin-bottom:2em;border-radius:12px;">
+        <img src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=800&q=80" alt="Santos E-Comm Hero" style="max-width:220px;width:100%;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.08);margin-bottom:1em;">
+        <h1 style="font-size:2.2em;margin:0 0 0.3em 0;color:#222;">Welcome to santos e-comm</h1>
+        <p style="font-size:1.2em;color:#444;max-width:500px;margin:0 auto;">
+            Discover the latest in fashion and accessories. Shop quality clothing for every season, style, and occasion!
+        </p>
+    </section>
+    <section class="products">
+    `;
     products.forEach(product => {
         html += `
         <article class="product">
             <img src="${product.img}" alt="${product.name}">
             <h2>${product.name}</h2>
-            <p>$${product.price.toFixed(2)}</p>
+            <p>₹${product.price}</p>
             <button data-id="${product.id}">Add to Cart</button>
             <p><a href="#readmore-${product.id}" class="read-more-link">Read More</a></p>
         </article>
