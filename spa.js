@@ -227,8 +227,11 @@ function renderHome() {
     let html = `
     <section class="hero-banner" style="background:linear-gradient(90deg,#f8fafc 60%,#e0e7ef 100%);padding:2.5em 1em 2em 1em;text-align:center;margin-bottom:2em;border-radius:12px;">
         <img src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=800&q=80" alt="Santos E-Comm Hero" style="max-width:220px;width:100%;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.08);margin-bottom:1em;">
-        <h1 style="font-size:2.2em;margin:0 0 0.3em 0;color:#222;">Welcome to santos e-comm</h1>
-        <p style="font-size:1.2em;color:#444;max-width:500px;margin:0 auto;">
+        <h1 style="font-size:2.2em;margin:0 0 0.3em 0;color:#222;">WKND Adventures and Travel</h1>
+        <p style="font-size:1.2em;color:#444;max-width:600px;margin:0 auto;">
+            WKND is a collective of outdoors, music, crafts, adventure sports, and travel enthusiasts that want to share our experiences, connections, and expertise with the world.
+        </p>
+        <p style="font-size:1em;color:#666;max-width:600px;margin:1em auto 0 auto;">
             Discover the latest in fashion and accessories. Shop quality clothing for every season, style, and occasion!
         </p>
     </section>
@@ -409,7 +412,124 @@ function showProductAddedPopup(productName) {
     }, 1800);
 }
 
-// Update setupCartButtons to show popup
+// --- Adobe Client Data Layer structure for santos e-comm SPA ---
+
+window.adobeDataLayer = window.adobeDataLayer || [];
+
+// Utility to generate unique IDs for components/pages
+function generateId(prefix = "cmp") {
+    return prefix + "-" + Math.random().toString(36).substr(2, 10);
+}
+
+// Push page view event
+function pushPageDataLayer(pageTitle, pageDesc, path = window.location.pathname) {
+    const pageId = generateId("page");
+    window.adobeDataLayer.push({
+        page: {
+            [pageId]: {
+                "@type": "santos/components/page",
+                "repo:modifyDate": new Date().toISOString(),
+                "dc:title": pageTitle,
+                "dc:description": pageDesc,
+                "xdm:template": "/conf/santos/settings/wcm/templates/spa-template",
+                "xdm:language": "en-US",
+                "xdm:tags": [],
+                "repo:path": path
+            }
+        },
+        event: "cmp:show",
+        eventInfo: {
+            path: `page.${pageId}`
+        }
+    });
+}
+
+// Push navigation event
+function pushNavDataLayer(label, url) {
+    const navId = generateId("nav");
+    window.adobeDataLayer.push({
+        component: {
+            [navId]: {
+                "@type": "santos/components/navigation/item",
+                "repo:modifyDate": new Date().toISOString(),
+                "dc:title": label,
+                "xdm:linkURL": url,
+                "parentId": "navigation-root"
+            }
+        }
+    });
+}
+
+// Push product add-to-cart event
+function pushProductAddDataLayer(product) {
+    const cmpId = generateId("product");
+    window.adobeDataLayer.push({
+        component: {
+            [cmpId]: {
+                "@type": "santos/components/product",
+                "repo:modifyDate": new Date().toISOString(),
+                "dc:title": product.name,
+                "dc:description": product.desc,
+                "xdm:price": product.price,
+                "xdm:color": product.color,
+                "xdm:image": product.img,
+                "parentId": "products-list"
+            }
+        },
+        event: "cmp:productAdded",
+        eventInfo: {
+            productId: product.id,
+            productName: product.name
+        }
+    });
+}
+
+// Example usage in your SPA:
+
+// 1. Push page data on navigation
+function router() {
+    const hash = window.location.hash || '#home';
+    if (hash.startsWith('#readmore-')) {
+        renderReadMore(hash.replace('#readmore-', ''));
+        updateNavUser();
+        pushPageDataLayer("Product Details", "Viewing product details");
+        return;
+    }
+    switch (hash) {
+        case '#home':
+            renderHome();
+            pushPageDataLayer("Home", "Welcome to santos e-comm");
+            break;
+        case '#shop':
+            renderShop();
+            pushPageDataLayer("Shop", "Browse and filter products");
+            break;
+        case '#cart':
+            renderCart();
+            pushPageDataLayer("Cart", "View your cart items");
+            break;
+        case '#contact':
+            renderContact();
+            pushPageDataLayer("Contact", "Contact and GitHub info");
+            break;
+        default:
+            renderHome();
+            pushPageDataLayer("Home", "Welcome to santos e-comm");
+    }
+    // Update cart count on navigation
+    const cartCountSpan = document.getElementById('cart-count');
+    if (cartCountSpan) cartCountSpan.textContent = cart.length;
+    updateNavUser();
+}
+
+// 2. Push navigation events (optional, e.g. in nav click handlers)
+document.querySelectorAll('nav a').forEach(link => {
+    link.addEventListener('click', function () {
+        pushNavDataLayer(this.textContent, this.getAttribute('href'));
+    });
+});
+
+// 3. Push product add-to-cart event in setupCartButtons
 function setupCartButtons() {
     const buttons = document.querySelectorAll('.product button, article button[data-id]');
     const cartCountSpan = document.getElementById('cart-count');
@@ -419,8 +539,9 @@ function setupCartButtons() {
             const product = products.find(p => p.id === id);
             if (product) {
                 cart.push(product);
-                saveCart(); // Save to localStorage
-                showProductAddedPopup(product.name); // Show popup
+                saveCart();
+                showProductAddedPopup(product.name);
+                pushProductAddDataLayer(product); // <-- Adobe Data Layer push
             }
             if (cartCountSpan) cartCountSpan.textContent = cart.length;
         });
@@ -487,23 +608,29 @@ function router() {
     if (hash.startsWith('#readmore-')) {
         renderReadMore(hash.replace('#readmore-', ''));
         updateNavUser();
+        pushPageDataLayer("Product Details", "Viewing product details");
         return;
     }
     switch (hash) {
         case '#home':
             renderHome();
+            pushPageDataLayer("Home", "Welcome to santos e-comm");
             break;
         case '#shop':
             renderShop();
+            pushPageDataLayer("Shop", "Browse and filter products");
             break;
         case '#cart':
             renderCart();
+            pushPageDataLayer("Cart", "View your cart items");
             break;
         case '#contact':
             renderContact();
+            pushPageDataLayer("Contact", "Contact and GitHub info");
             break;
         default:
             renderHome();
+            pushPageDataLayer("Home", "Welcome to santos e-comm");
     }
     // Update cart count on navigation
     const cartCountSpan = document.getElementById('cart-count');
