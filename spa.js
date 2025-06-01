@@ -240,7 +240,9 @@ function renderHome() {
     products.forEach(product => {
         html += `
         <article class="product">
-            <img src="${product.img}" alt="${product.name}">
+            <a href="#readmore-${product.id}" class="product-img-link">
+                <img src="${product.img}" alt="${product.name}" style="cursor:pointer;">
+            </a>
             <h2>${product.name}</h2>
             <p>₹${product.price}</p>
             <button data-id="${product.id}">Add to Cart</button>
@@ -252,21 +254,45 @@ function renderHome() {
     document.getElementById('app-content').innerHTML = html;
     setupCartButtons();
     setupReadMoreLinks();
+    setupProductImageLinks();
+}
+
+function setupProductImageLinks() {
+    const links = document.querySelectorAll('.product-img-link');
+    links.forEach(link => {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            const hash = this.getAttribute('href');
+            window.location.hash = hash;
+        });
+    });
 }
 
 function renderReadMore(productId) {
     const product = products.find(p => p.id == productId);
     if (!product) return renderHome();
     document.getElementById('app-content').innerHTML = `
-        <article>
-            <img src="${product.img}" alt="${product.name}" style="max-width:300px;">
-            <h2>${product.name}</h2>
-            <p><strong>Color:</strong> ${product.color}</p>
-            <p><strong>Price:</strong> $${product.price.toFixed(2)}</p>
-            <p>${product.desc}</p>
-            <button data-id="${product.id}">Add to Cart</button>
-            <p><a href="#home">Back to Home</a></p>
-        </article>
+        <section class="pdp-container" style="display:flex;flex-wrap:wrap;gap:2em;align-items:flex-start;justify-content:center;padding:2em 0;">
+            <div class="pdp-image" style="flex:1;min-width:280px;max-width:400px;text-align:center;">
+                <img src="${product.img}" alt="${product.name}" style="max-width:100%;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
+            </div>
+            <div class="pdp-details" style="flex:2;min-width:280px;max-width:500px;">
+                <h1 style="font-size:2em;margin-bottom:0.3em;color:#222;">${product.name}</h1>
+                <span class="badge" style="background:${product.color.toLowerCase()};color:#fff;padding:4px 12px;border-radius:6px;font-size:1em;vertical-align:middle;">${product.color}</span>
+                <p style="font-size:1.3em;color:#28a745;margin:1em 0 0.5em 0;"><strong>₹${product.price}</strong></p>
+                <p style="font-size:1.1em;color:#444;margin-bottom:1.5em;">
+                    ${product.desc}
+                </p>
+                <ul style="color:#555;font-size:1em;line-height:1.7;margin-bottom:1.5em;">
+                    <li>Free shipping on orders above ₹999</li>
+                    <li>Easy 7-day returns</li>
+                    <li>Secure online payment</li>
+                    <li>Quality checked &amp; authentic products</li>
+                </ul>
+                <button data-id="${product.id}" style="background:#222;color:#fff;padding:0.8em 2em;font-size:1.1em;border:none;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.08);cursor:pointer;">Add to Cart</button>
+                <p style="margin-top:2em;"><a href="#home" style="color:#0366d6;text-decoration:underline;">&#8592; Back to Home</a></p>
+            </div>
+        </section>
     `;
     setupCartButtons();
 }
@@ -317,11 +343,21 @@ function renderCart() {
         cart.forEach((item, idx) => {
             html += `<li>
                 <img src="${item.img}" alt="${item.name}" style="width:40px;height:40px;vertical-align:middle;border-radius:4px;margin-right:8px;">
-                ${item.name} - $${item.price.toFixed(2)}
+                ${item.name} - ₹${item.price}
                 <button class="remove-btn" data-idx="${idx}" style="margin-left:10px;background:#dc3545;">Remove</button>
             </li>`;
         });
         html += `</ul>`;
+
+        // --- Cart Total Calculator ---
+        const total = cart.reduce((sum, item) => sum + Number(item.price), 0);
+        html += `
+            <div style="margin-top:2em;padding:1em;background:#f8fafc;border-radius:8px;max-width:350px;">
+                <h3 style="margin:0 0 0.5em 0;">Cart Total</h3>
+                <div style="font-size:1.3em;font-weight:bold;color:#222;">₹${total}</div>
+                <p style="font-size:0.95em;color:#666;margin:0.5em 0 0 0;">(Inclusive of all taxes)</p>
+            </div>
+        `;
     }
     document.getElementById('app-content').innerHTML = html;
     setupRemoveButtons();
