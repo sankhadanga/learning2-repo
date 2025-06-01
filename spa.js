@@ -146,7 +146,27 @@ const products = [
     }
 ];
 
-let cart = [];
+let user = JSON.parse(localStorage.getItem('santos_user')) || null;
+
+function saveUser(u) {
+    user = u;
+    localStorage.setItem('santos_user', JSON.stringify(user));
+}
+function logoutUser() {
+    user = null;
+    localStorage.removeItem('santos_user');
+    router();
+}
+
+function saveCart() {
+    localStorage.setItem('santos_cart', JSON.stringify(cart));
+}
+function loadCart() {
+    const data = localStorage.getItem('santos_cart');
+    return data ? JSON.parse(data) : [];
+}
+
+let cart = loadCart();
 
 function renderHome() {
     let html = `<section class="products">`;
@@ -251,6 +271,50 @@ function renderContact() {
     `;
 }
 
+function showLoginModal() {
+    const modal = document.createElement('div');
+    modal.id = "login-modal";
+    modal.style = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;";
+    modal.innerHTML = `
+      <div style="background:#fff;padding:2em 2em 1em 2em;border-radius:8px;min-width:300px;max-width:90vw;position:relative;">
+        <h2>Login</h2>
+        <button id="google-login-btn" style="width:100%;background:#4285F4;color:#fff;padding:0.5em 0;border:none;border-radius:4px;margin-bottom:1em;font-size:1em;">
+          <span style="font-weight:bold;">G</span> Sign in with Google (demo)
+        </button>
+        <form id="email-login-form">
+          <input type="email" id="login-email" placeholder="Email" required style="width:100%;margin-bottom:0.5em;padding:0.5em;">
+          <input type="password" id="login-pass" placeholder="Password" required style="width:100%;margin-bottom:0.5em;padding:0.5em;">
+          <button type="submit" style="width:100%;background:#222;color:#fff;padding:0.5em 0;border:none;border-radius:4px;">Login with Email</button>
+        </form>
+        <button id="close-login-modal" style="position:absolute;top:0.5em;right:0.5em;background:none;border:none;font-size:1.2em;">&times;</button>
+        <div id="login-error" style="color:red;margin-top:0.5em;"></div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('close-login-modal').onclick = () => modal.remove();
+
+    document.getElementById('google-login-btn').onclick = () => {
+        // Simulate Google login (for demo)
+        saveUser({ email: "googleuser@santos.com", provider: "google" });
+        modal.remove();
+        router();
+    };
+
+    document.getElementById('email-login-form').onsubmit = (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value.trim();
+        const pass = document.getElementById('login-pass').value.trim();
+        if (email === "testsantos@test.com" && pass === "test") {
+            saveUser({ email, provider: "test" });
+            modal.remove();
+            router();
+        } else {
+            document.getElementById('login-error').textContent = "Invalid credentials. Try test account.";
+        }
+    };
+}
+
 function setupCartButtons() {
     const buttons = document.querySelectorAll('.product button, article button[data-id]');
     const cartCountSpan = document.getElementById('cart-count');
@@ -259,6 +323,7 @@ function setupCartButtons() {
             const id = parseInt(this.getAttribute('data-id'));
             const product = products.find(p => p.id === id);
             if (product) cart.push(product);
+            saveCart(); // Save to localStorage
             if (cartCountSpan) cartCountSpan.textContent = cart.length;
         });
     });
@@ -271,6 +336,7 @@ function setupRemoveButtons() {
         btn.addEventListener('click', function () {
             const idx = parseInt(this.getAttribute('data-idx'));
             cart.splice(idx, 1);
+            saveCart(); // Save to localStorage
             if (cartCountSpan) cartCountSpan.textContent = cart.length;
             renderCart();
         });
@@ -288,11 +354,46 @@ function setupReadMoreLinks() {
     });
 }
 
+function updateNavUser() {
+    let nav = document.querySelector('nav');
+    if (!nav) return;
+    let userBtn = document.getElementById('nav-user');
+    if (userBtn) userBtn.remove();
+    let btn = document.createElement('span');
+    btn.id = 'nav-user';
+    btn.style = "float:right;margin-left:1em;";
+    if (user) {
+        btn.innerHTML = `<span style="color:green;">${user.email}</span> <button id="logout-btn" style="margin-left:0.5em;">Logout</button>`;
+        nav.appendChild(btn);
+        setTimeout(() => {
+            document.getElementById('logout-btn').onclick = () => {
+                logoutUser();
+            };
+        }, 100);
+    } else {
+        btn.innerHTML = `<button id="login-btn">Login</button>`;
+        nav.appendChild(btn);
+        setTimeout(() => {
+            document.getElementById('login-btn').onclick = showLoginModal;
+        }, 100);
+    }
+}
+
+function requireLogin(next) {
+    if (!user) {
+        showLoginModal();
+        return false;
+    }
+    return true;
+}
+
 function router() {
     const hash = window.location.hash || '#home';
     if (hash.startsWith('#readmore-')) {
+        if (!requireLogin()) return;
         const productId = hash.replace('#readmore-', '');
         renderReadMore(productId);
+        updateNavUser();
         return;
     }
     switch (hash) {
@@ -300,9 +401,11 @@ function router() {
             renderHome();
             break;
         case '#shop':
+            if (!requireLogin()) return;
             renderShop();
             break;
         case '#cart':
+            if (!requireLogin()) return;
             renderCart();
             break;
         case '#contact':
@@ -314,7 +417,16 @@ function router() {
     // Update cart count on navigation
     const cartCountSpan = document.getElementById('cart-count');
     if (cartCountSpan) cartCountSpan.textContent = cart.length;
+    updateNavUser();
 }
+
+// Also, update cart count on page load
+window.addEventListener('DOMContentLoaded', () => {
+    router();
+    const cartCountSpan = document.getElementById('cart-count');
+    if (cartCountSpan) cartCountSpan.textContent = cart.length;
+    updateNavUser();
+});
 
 window.addEventListener('hashchange', router);
 window.addEventListener('DOMContentLoaded', router);
