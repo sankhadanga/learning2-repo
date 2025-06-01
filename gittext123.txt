@@ -1,1 +1,2 @@
 So this is round 2 of the commit with github.
+Use testsantos@test.com / test to log in as the test user
