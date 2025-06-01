@@ -1,3 +1,58 @@
+// --- Data Layer for santos e-comm SPA ---
+
+// Product Data Layer
+const DataLayer = {
+    getProducts() {
+        // Returns a copy to prevent direct mutation
+        return [...products];
+    },
+    getProductById(id) {
+        return products.find(p => p.id === Number(id)) || null;
+    },
+    getColors() {
+        return [...new Set(products.map(p => p.color))];
+    }
+};
+
+// User Data Layer
+const UserData = {
+    getUser() {
+        return JSON.parse(localStorage.getItem('santos_user')) || null;
+    },
+    setUser(userObj) {
+        localStorage.setItem('santos_user', JSON.stringify(userObj));
+    },
+    clearUser() {
+        localStorage.removeItem('santos_user');
+    }
+};
+
+// Cart Data Layer
+const CartData = {
+    getCart() {
+        const data = localStorage.getItem('santos_cart');
+        return data ? JSON.parse(data) : [];
+    },
+    setCart(cartArr) {
+        localStorage.setItem('santos_cart', JSON.stringify(cartArr));
+    },
+    addToCart(product) {
+        const cart = this.getCart();
+        cart.push(product);
+        this.setCart(cart);
+        return cart;
+    },
+    removeFromCart(idx) {
+        const cart = this.getCart();
+        cart.splice(idx, 1);
+        this.setCart(cart);
+        return cart;
+    },
+    clearCart() {
+        localStorage.removeItem('santos_cart');
+    }
+};
+
 // Demo product data
 const products = [
     {
@@ -380,19 +435,14 @@ function updateNavUser() {
 }
 
 function requireLogin(next) {
-    if (!user) {
-        showLoginModal();
-        return false;
-    }
+    // Login is optional, so always allow
     return true;
 }
 
 function router() {
     const hash = window.location.hash || '#home';
     if (hash.startsWith('#readmore-')) {
-        if (!requireLogin()) return;
-        const productId = hash.replace('#readmore-', '');
-        renderReadMore(productId);
+        renderReadMore(hash.replace('#readmore-', ''));
         updateNavUser();
         return;
     }
@@ -401,11 +451,9 @@ function router() {
             renderHome();
             break;
         case '#shop':
-            if (!requireLogin()) return;
             renderShop();
             break;
         case '#cart':
-            if (!requireLogin()) return;
             renderCart();
             break;
         case '#contact':
