@@ -379,6 +379,37 @@ function showLoginModal() {
     };
 }
 
+function showProductAddedPopup(productName) {
+    // Remove any existing popup
+    const oldPopup = document.getElementById('product-added-popup');
+    if (oldPopup) oldPopup.remove();
+
+    const popup = document.createElement('div');
+    popup.id = 'product-added-popup';
+    popup.textContent = `Product "${productName}" has been added successfully.`;
+    popup.style = `
+        position: fixed;
+        top: 30px;
+        right: 30px;
+        background: #28a745;
+        color: #fff;
+        padding: 1em 1.5em;
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        font-size: 1.1em;
+        z-index: 2000;
+        opacity: 0.95;
+        transition: opacity 0.3s;
+    `;
+    document.body.appendChild(popup);
+
+    setTimeout(() => {
+        popup.style.opacity = '0';
+        setTimeout(() => popup.remove(), 500);
+    }, 1800);
+}
+
+// Update setupCartButtons to show popup
 function setupCartButtons() {
     const buttons = document.querySelectorAll('.product button, article button[data-id]');
     const cartCountSpan = document.getElementById('cart-count');
@@ -386,8 +417,11 @@ function setupCartButtons() {
         button.addEventListener('click', function () {
             const id = parseInt(this.getAttribute('data-id'));
             const product = products.find(p => p.id === id);
-            if (product) cart.push(product);
-            saveCart(); // Save to localStorage
+            if (product) {
+                cart.push(product);
+                saveCart(); // Save to localStorage
+                showProductAddedPopup(product.name); // Show popup
+            }
             if (cartCountSpan) cartCountSpan.textContent = cart.length;
         });
     });
