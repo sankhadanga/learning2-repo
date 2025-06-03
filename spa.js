@@ -448,87 +448,135 @@ function showProductAddedPopup(productName) {
     }, 1800);
 }
 
-// --- Adobe Client Data Layer structure for santos e-comm SPA ---
-
-window.adobeDataLayer = window.adobeDataLayer || [];
+// --- Enhanced Adobe Client Data Layer for Analytics ---
 
 // Utility to generate unique IDs for components/pages
 function generateId(prefix = "cmp") {
     return prefix + "-" + Math.random().toString(36).substr(2, 10);
 }
 
-// Push page view event
+// Enhanced: Push page view event with more analytics-friendly fields
 function pushPageDataLayer(pageTitle, pageDesc, path = window.location.pathname) {
     const pageId = generateId("page");
     window.adobeDataLayer.push({
+        event: "pageView",
         page: {
-            [pageId]: {
-                "@type": "santos/components/page",
-                "repo:modifyDate": new Date().toISOString(),
-                "dc:title": pageTitle,
-                "dc:description": pageDesc,
-                "xdm:template": "/conf/santos/settings/wcm/templates/spa-template",
-                "xdm:language": "en-US",
-                "xdm:tags": [],
-                "repo:path": path
+            pageInfo: {
+                pageID: pageId,
+                pageName: pageTitle,
+                pageURL: window.location.href,
+                pagePath: path,
+                language: "en-US",
+                siteSection: "santos-ecomm",
+                siteSubsection: pageTitle.toLowerCase().replace(/\s/g, "-"),
+                server: window.location.hostname
+            },
+            attributes: {
+                description: pageDesc,
+                template: "/conf/santos/settings/wcm/templates/spa-template",
+                tags: [],
+                timestamp: new Date().toISOString()
             }
-        },
-        event: "cmp:show",
-        eventInfo: {
-            path: `page.${pageId}`
         }
     });
 }
 
-// Push navigation event
+// Enhanced: Push navigation event
 function pushNavDataLayer(label, url) {
     const navId = generateId("nav");
     window.adobeDataLayer.push({
-        component: {
-            [navId]: {
-                "@type": "santos/components/navigation/item",
-                "repo:modifyDate": new Date().toISOString(),
-                "dc:title": label,
-                "xdm:linkURL": url,
-                "parentId": "navigation-root"
-            }
+        event: "navigationClick",
+        navigation: {
+            navID: navId,
+            navLabel: label,
+            navURL: url,
+            timestamp: new Date().toISOString()
         }
     });
 }
 
-// Push product add-to-cart event
+// Enhanced: Push product add-to-cart event with commerce fields
 function pushProductAddDataLayer(product) {
     const cmpId = generateId("product");
     window.adobeDataLayer.push({
-        component: {
-            [cmpId]: {
-                "@type": "santos/components/product",
-                "repo:modifyDate": new Date().toISOString(),
-                "dc:title": product.name,
-                "dc:description": product.desc,
-                "xdm:price": product.price,
-                "xdm:color": product.color,
-                "xdm:image": product.img,
-                "parentId": "products-list"
+        event: "addToCart",
+        ecommerce: {
+            action: "add",
+            productList: [{
+                productID: product.id,
+                productName: product.name,
+                productDescription: product.desc,
+                price: product.price,
+                color: product.color,
+                imageURL: product.img,
+                quantity: 1
+            }],
+            cart: {
+                cartTotal: cart.reduce((sum, item) => sum + Number(item.price), 0),
+                cartCount: cart.length
             }
         },
-        event: "cmp:productAdded",
-        eventInfo: {
-            productId: product.id,
-            productName: product.name
+        attributes: {
+            timestamp: new Date().toISOString()
         }
     });
 }
 
-// Example usage in your SPA:
+// Enhanced: Push cart view event
+function pushCartViewDataLayer() {
+    window.adobeDataLayer.push({
+        event: "cartView",
+        ecommerce: {
+            cart: {
+                cartTotal: cart.reduce((sum, item) => sum + Number(item.price), 0),
+                cartCount: cart.length,
+                products: cart.map(item => ({
+                    productID: item.id,
+                    productName: item.name,
+                    price: item.price,
+                    color: item.color,
+                    imageURL: item.img,
+                    quantity: 1
+                }))
+            }
+        },
+        attributes: {
+            timestamp: new Date().toISOString()
+        }
+    });
+}
 
-// 1. Push page data on navigation
+// Enhanced: Push product detail view event
+function pushProductDetailDataLayer(product) {
+    window.adobeDataLayer.push({
+        event: "productDetailView",
+        ecommerce: {
+            detail: {
+                productID: product.id,
+                productName: product.name,
+                productDescription: product.desc,
+                price: product.price,
+                color: product.color,
+                imageURL: product.img
+            }
+        },
+        attributes: {
+            timestamp: new Date().toISOString()
+        }
+    });
+}
+
+// --- Usage in SPA ---
+
 function router() {
     const hash = window.location.hash || '#home';
     if (hash.startsWith('#readmore-')) {
-        renderReadMore(hash.replace('#readmore-', ''));
+        const pid = hash.replace('#readmore-', '');
+        const product = products.find(p => p.id == pid);
+        renderReadMore(pid);
         updateNavUser();
         pushPageDataLayer("Product Details", "Viewing product details");
+        if (product) pushProductDetailDataLayer(product);
         return;
     }
     switch (hash) {
@@ -543,6 +591,7 @@ function router() {
         case '#cart':
             renderCart();
             pushPageDataLayer("Cart", "View your cart items");
+            pushCartViewDataLayer();
             break;
         case '#contact':
             renderContact();
@@ -558,14 +607,14 @@ function router() {
     updateNavUser();
 }
 
-// 2. Push navigation events (optional, e.g. in nav click handlers)
+// Navigation click tracking
 document.querySelectorAll('nav a').forEach(link => {
     link.addEventListener('click', function () {
         pushNavDataLayer(this.textContent, this.getAttribute('href'));
     });
 });
 
-// 3. Push product add-to-cart event in setupCartButtons
+// Add-to-cart tracking
 function setupCartButtons() {
     const buttons = document.querySelectorAll('.product button, article button[data-id]');
     const cartCountSpan = document.getElementById('cart-count');
@@ -577,110 +626,9 @@ function setupCartButtons() {
                 cart.push(product);
                 saveCart();
                 showProductAddedPopup(product.name);
-                pushProductAddDataLayer(product); // <-- Adobe Data Layer push
+                pushProductAddDataLayer(product); // Enhanced Data Layer push
             }
             if (cartCountSpan) cartCountSpan.textContent = cart.length;
         });
     });
 }
-
-function setupRemoveButtons() {
-    const removeBtns = document.querySelectorAll('.remove-btn');
-    const cartCountSpan = document.getElementById('cart-count');
-    removeBtns.forEach(btn => {
-        btn.addEventListener('click', function () {
-            const idx = parseInt(this.getAttribute('data-idx'));
-            cart.splice(idx, 1);
-            saveCart(); // Save to localStorage
-            if (cartCountSpan) cartCountSpan.textContent = cart.length;
-            renderCart();
-        });
-    });
-}
-
-function setupReadMoreLinks() {
-    const links = document.querySelectorAll('.read-more-link');
-    links.forEach(link => {
-        link.addEventListener('click', function (e) {
-            e.preventDefault();
-            const hash = this.getAttribute('href');
-            window.location.hash = hash;
-        });
-    });
-}
-
-function updateNavUser() {
-    let nav = document.querySelector('nav');
-    if (!nav) return;
-    let userBtn = document.getElementById('nav-user');
-    if (userBtn) userBtn.remove();
-    let btn = document.createElement('span');
-    btn.id = 'nav-user';
-    btn.style = "float:right;margin-left:1em;";
-    if (user) {
-        btn.innerHTML = `<span style="color:green;">${user.email}</span> <button id="logout-btn" style="margin-left:0.5em;">Logout</button>`;
-        nav.appendChild(btn);
-        setTimeout(() => {
-            document.getElementById('logout-btn').onclick = () => {
-                logoutUser();
-            };
-        }, 100);
-    } else {
-        btn.innerHTML = `<button id="login-btn">Login</button>`;
-        nav.appendChild(btn);
-        setTimeout(() => {
-            document.getElementById('login-btn').onclick = showLoginModal;
-        }, 100);
-    }
-}
-
-function requireLogin(next) {
-    // Login is optional, so always allow
-    return true;
-}
-
-function router() {
-    const hash = window.location.hash || '#home';
-    if (hash.startsWith('#readmore-')) {
-        renderReadMore(hash.replace('#readmore-', ''));
-        updateNavUser();
-        pushPageDataLayer("Product Details", "Viewing product details");
-        return;
-    }
-    switch (hash) {
-        case '#home':
-            renderHome();
-            pushPageDataLayer("Home", "Welcome to santos e-comm");
-            break;
-        case '#shop':
-            renderShop();
-            pushPageDataLayer("Shop", "Browse and filter products");
-            break;
-        case '#cart':
-            renderCart();
-            pushPageDataLayer("Cart", "View your cart items");
-            break;
-        case '#contact':
-            renderContact();
-            pushPageDataLayer("Contact", "Contact and GitHub info");
-            break;
-        default:
-            renderHome();
-            pushPageDataLayer("Home", "Welcome to santos e-comm");
-    }
-    // Update cart count on navigation
-    const cartCountSpan = document.getElementById('cart-count');
-    if (cartCountSpan) cartCountSpan.textContent = cart.length;
-    updateNavUser();
-}
-
-// Also, update cart count on page load
-window.addEventListener('DOMContentLoaded', () => {
-    router();
-    const cartCountSpan = document.getElementById('cart-count');
-    if (cartCountSpan) cartCountSpan.textContent = cart.length;
-    updateNavUser();
-});
-
-window.addEventListener('hashchange', router);
-window.addEventListener('DOMContentLoaded', router);
