@@ -317,43 +317,6 @@ function renderReadMore(productId) {
     setupCartButtons();
 }
 
-function renderShop() {
-    // Get unique colors
-    const colors = [...new Set(products.map(p => p.color))];
-    let colorOptions = colors.map(color => `<option value="${color}">${color}</option>`).join('');
-    let selectedColor = window.selectedColor || "All";
-    let filtered = selectedColor && selectedColor !== "All" ? products.filter(p => p.color === selectedColor) : products;
-
-    let html = `
-        <h2>Shop by Color</h2>
-        <label for="color-select">Filter by color: </label>
-        <select id="color-select">
-            <option value="All">All</option>
-            ${colorOptions}
-        </select>
-        <section class="products">
-    `;
-    filtered.forEach(product => {
-        html += `
-        <article class="product">
-            <img src="${product.img}" alt="${product.name}">
-            <h2>${product.name}</h2>
-            <p>$${product.price.toFixed(2)}</p>
-            <span class="badge" style="background:${product.color.toLowerCase()};color:#fff;padding:2px 8px;border-radius:4px;font-size:0.8em;">${product.color}</span>
-            <button data-id="${product.id}">Add to Cart</button>
-        </article>
-        `;
-    });
-    html += `</section>`;
-    document.getElementById('app-content').innerHTML = html;
-    document.getElementById('color-select').value = selectedColor;
-    document.getElementById('color-select').addEventListener('change', function () {
-        window.selectedColor = this.value;
-        renderShop();
-    });
-    setupCartButtons();
-}
-
 function renderCart() {
     let html = `<h2>Your Cart</h2>`;
     if (cart.length === 0) {
@@ -603,10 +566,6 @@ function router() {
         case '#home':
             renderHome();
             pushPageDataLayer("Home", "Welcome to santos e-comm");
-            break;
-        case '#shop':
-            renderShop();
-            pushPageDataLayer("Shop", "Browse and filter products");
             break;
         case '#cart':
             renderCart();
