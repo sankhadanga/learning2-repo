@@ -611,8 +611,15 @@ function router() {
 function setupNavTracking() {
     const navLinks = document.querySelectorAll('nav a');
     navLinks.forEach(link => {
-        link.addEventListener('click', function () {
-            pushNavDataLayer(this.textContent, this.getAttribute('href'));
+        link.addEventListener('click', function (e) {
+            e.preventDefault(); // Prevent default navigation
+            const href = this.getAttribute('href');
+            if (window.location.hash !== href) {
+                window.location.hash = href; // This will trigger router()
+            } else {
+                router(); // If already on the same hash, force rerender
+            }
+            pushNavDataLayer(this.textContent, href);
         });
     });
 }
