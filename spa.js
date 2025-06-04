@@ -227,13 +227,12 @@ function renderHome() {
     let html = `
     <section class="hero-banner" style="background:linear-gradient(90deg,#f8fafc 60%,#e0e7ef 100%);padding:2.5em 1em 2em 1em;text-align:center;margin-bottom:2em;border-radius:12px;">
         <img src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=800&q=80" alt="Santos E-Comm Hero" style="max-width:220px;width:100%;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.08);margin-bottom:1em;">
-        <h1 style="font-size:2.2em;margin:0 0 0.3em 0;color:#222;">WKND Adventures and Travel</h1>
+        <h1 style="font-size:2.2em;margin:0 0 0.3em 0;color:#222;">SANTOSH e-comm a Demo site</h1>
         <p style="font-size:1.2em;color:#444;max-width:600px;margin:0 auto;">
-            WKND is a collective of outdoors, music, crafts, adventure sports, and travel enthusiasts that want to share our experiences, connections, and expertise with the world.
+            This site is a demo for an e-commerce platform. It showcases various products and features like cart management, product details, and user authentication.
         </p>
         <p style="font-size:1em;color:#666;max-width:600px;margin:1em auto 0 auto;">
-            Discover the latest in fashion and accessories. Shop quality clothing for every season, style, and occasion!
-        </p>
+            Discover more about this project at github.com/sankhadanga/testsk2-repo
     </section>
     <section class="products">
     `;
@@ -289,7 +288,7 @@ function renderReadMore(productId) {
                     <li>Secure online payment</li>
                     <li>Quality checked &amp; authentic products</li>
                 </ul>
-                <button data-id="${product.id}" style="background:#222;color:#fff;padding:0.8em 2em;font-size:1.1em;border:none;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.08);cursor:pointer;">Add to Cart</button>
+                <button class="add-to-cart-btn" data-id="${product.id}" style="background:#222;color:#fff;padding:0.8em 2em;font-size:1.1em;border:none;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.08);cursor:pointer;">Add to Cart</button>
                 <p style="margin-top:2em;"><a href="#home" style="color:#0366d6;text-decoration:underline;">&#8592; Back to Home</a></p>
             </div>
         </section>
@@ -650,7 +649,7 @@ function updateNavUser() {
 
 // Update cart count after adding to cart
 function setupCartButtons() {
-    const buttons = document.querySelectorAll('.product button, article button[data-id]');
+    const buttons = document.querySelectorAll('.product button, article button[data-id], .add-to-cart-btn');
     buttons.forEach(button => {
         button.onclick = function () {
             const id = parseInt(this.getAttribute('data-id'));
