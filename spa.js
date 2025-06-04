@@ -656,11 +656,11 @@ function setupCartButtons() {
             const id = parseInt(this.getAttribute('data-id'));
             const product = products.find(p => p.id === id);
             if (product) {
-                cart.push(product);
-                saveCart();
+                CartData.addToCart(product);
+                cart = CartData.getCart();
                 showProductAddedPopup(product.name);
                 pushProductAddDataLayer(product);
-                updateCartCount(); // <-- update cart count immediately
+                updateCartCount();
             }
         };
     });
