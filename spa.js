@@ -608,10 +608,19 @@ function router() {
 }
 
 // Navigation click tracking
-document.querySelectorAll('nav a').forEach(link => {
-    link.addEventListener('click', function () {
-        pushNavDataLayer(this.textContent, this.getAttribute('href'));
+function setupNavTracking() {
+    const navLinks = document.querySelectorAll('nav a');
+    navLinks.forEach(link => {
+        link.addEventListener('click', function () {
+            pushNavDataLayer(this.textContent, this.getAttribute('href'));
+        });
     });
+}
+
+// Call this after DOM is ready and nav exists
+document.addEventListener('DOMContentLoaded', () => {
+    setupNavTracking();
+    router(); // Ensure router runs after DOM is ready
 });
 
 // Add-to-cart tracking
