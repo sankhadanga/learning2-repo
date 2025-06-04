@@ -613,7 +613,8 @@ window.addEventListener('hashchange', router);
 // Call router and nav tracking on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
     router();
-    setupNavTracking();
+    // Only call setupNavTracking() here if your nav is static!
+    // If nav is dynamic, call setupNavTracking() after rendering nav in updateNavUser()
     updateCartCount();
 });
 
@@ -639,12 +640,6 @@ function setupNavTracking() {
         });
     });
 }
-
-// Call this after DOM is ready and nav exists
-document.addEventListener('DOMContentLoaded', () => {
-    setupNavTracking();
-    router(); // Ensure router runs after DOM is ready
-});
 
 // Update cart count after rendering nav/user
 function updateNavUser() {
