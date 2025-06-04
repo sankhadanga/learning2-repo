@@ -665,3 +665,16 @@ function setupCartButtons() {
         };
     });
 }
+
+function setupRemoveButtons() {
+    const removeButtons = document.querySelectorAll('.remove-btn');
+    removeButtons.forEach(button => {
+        button.onclick = function () {
+            const idx = parseInt(this.getAttribute('data-idx'));
+            CartData.removeFromCart(idx);
+            cart = CartData.getCart();
+            renderCart();
+            updateCartCount();
+        };
+    });
+}
