@@ -607,6 +607,22 @@ function router() {
     updateNavUser();
 }
 
+// Listen for hash changes to trigger router
+window.addEventListener('hashchange', router);
+
+// Call router and nav tracking on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+    router();
+    setupNavTracking();
+    updateCartCount();
+});
+
+// Utility to update cart count in nav
+function updateCartCount() {
+    const cartCountSpan = document.getElementById('cart-count');
+    if (cartCountSpan) cartCountSpan.textContent = cart.length;
+}
+
 // Navigation click tracking
 function setupNavTracking() {
     const navLinks = document.querySelectorAll('nav a');
@@ -630,21 +646,27 @@ document.addEventListener('DOMContentLoaded', () => {
     router(); // Ensure router runs after DOM is ready
 });
 
-// Add-to-cart tracking
+// Update cart count after rendering nav/user
+function updateNavUser() {
+    // ...existing code to render nav/user...
+    setupNavTracking(); // <-- ensure nav links always work
+    updateCartCount();  // <-- ensure cart count is always correct
+}
+
+// Update cart count after adding to cart
 function setupCartButtons() {
     const buttons = document.querySelectorAll('.product button, article button[data-id]');
-    const cartCountSpan = document.getElementById('cart-count');
     buttons.forEach(button => {
-        button.addEventListener('click', function () {
+        button.onclick = function () {
             const id = parseInt(this.getAttribute('data-id'));
             const product = products.find(p => p.id === id);
             if (product) {
                 cart.push(product);
                 saveCart();
                 showProductAddedPopup(product.name);
-                pushProductAddDataLayer(product); // Enhanced Data Layer push
+                pushProductAddDataLayer(product);
+                updateCartCount(); // <-- update cart count immediately
             }
-            if (cartCountSpan) cartCountSpan.textContent = cart.length;
-        });
+        };
     });
 }
