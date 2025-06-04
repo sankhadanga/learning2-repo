@@ -232,7 +232,6 @@ function renderHome() {
             This site is a demo for an e-commerce platform. It showcases various products and features like cart management, product details, and user authentication.
         </p>
         <p style="font-size:1em;color:#666;max-width:600px;margin:1em auto 0 auto;">
-            Discover more about this project at github.com/sankhadanga/testsk2-repo
     </section>
     <section class="products">
     `;
