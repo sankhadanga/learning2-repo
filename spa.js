@@ -224,6 +224,12 @@ function loadCart() {
 let cart = loadCart();
 
 function renderHome() {
+    // Get unique colors for filter
+    const colors = [...new Set(products.map(p => p.color))];
+    let colorOptions = colors.map(color => `<option value="${color}">${color}</option>`).join('');
+    let selectedColor = window.homeSelectedColor || "All";
+    let filtered = selectedColor && selectedColor !== "All" ? products.filter(p => p.color === selectedColor) : products;
+
     let html = `
     <section class="hero-banner" style="background:linear-gradient(90deg,#f8fafc 60%,#e0e7ef 100%);padding:2.5em 1em 2em 1em;text-align:center;margin-bottom:2em;border-radius:12px;">
         <img src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=800&q=80" alt="Santos E-Comm Hero" style="max-width:220px;width:100%;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.08);margin-bottom:1em;">
@@ -233,9 +239,17 @@ function renderHome() {
         </p>
         <p style="font-size:1em;color:#666;max-width:600px;margin:1em auto 0 auto;">
     </section>
+    <section>
+        <h2>Shop by Color</h2>
+        <label for="home-color-select">Filter by color: </label>
+        <select id="home-color-select">
+            <option value="All">All</option>
+            ${colorOptions}
+        </select>
+    </section>
     <section class="products">
     `;
-    products.forEach(product => {
+    filtered.forEach(product => {
         html += `
         <article class="product">
             <a href="#readmore-${product.id}" class="product-img-link">
@@ -250,6 +264,14 @@ function renderHome() {
     });
     html += `</section>`;
     document.getElementById('app-content').innerHTML = html;
+
+    // Set selected value and add event listener for filter
+    document.getElementById('home-color-select').value = selectedColor;
+    document.getElementById('home-color-select').addEventListener('change', function () {
+        window.homeSelectedColor = this.value;
+        renderHome();
+    });
+
     setupCartButtons();
     setupReadMoreLinks();
     setupProductImageLinks();
