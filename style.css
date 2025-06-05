@@ -1,32 +1,37 @@
 body {
-    font-family: Arial, sans-serif;
     margin: 0;
-    padding: 0;
-    background: #fafafa;
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f8f9fa;
 }
 
 header {
     background: #222;
     color: #fff;
-    padding: 1rem;
+    padding: 1em;
     text-align: center;
 }
 
 nav {
-    background: #eee;
-    padding: 0.5rem;
-    text-align: center;
+    background: #fff;
+    padding: 1em;
+    display: flex;
+    gap: 1em;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
 }
 
 nav a {
-    margin: 0 1rem;
     color: #222;
     text-decoration: none;
-    font-weight: bold;
+    padding: 0.5em 1em;
 }
 
-nav a:hover {
-    text-decoration: underline;
+nav button {
+    background: none;
+    border: none;
+    color: #222;
+    cursor: pointer;
+    padding: 0.5em 1em;
 }
 
 .products {
@@ -76,6 +81,9 @@ nav a:hover {
 }
 
 footer {
+    text-align: center;
+    padding: 2em;
+    color: #666;
     background: #222;
     color: #fff;
     text-align: center;
@@ -84,4 +92,8 @@ footer {
     width: 100%;
     bottom: 0;
     left: 0;
+}
+
+#app-content {
+    min-height: 80vh;
 }

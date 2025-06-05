@@ -468,13 +468,22 @@ function showLoginModal() {
 
 // --- Logout (in updateNavUser) ---
 function updateNavUser() {
-    // ...same as before...
-    document.getElementById('logout-btn')?.addEventListener('click', () => {
-        UserManager.clear();
-        CartManager.clear();
-        pushXdmToAlloy(XDM.logout());
-        router();
-    });
+    const nav = document.querySelector('nav');
+    if (!nav) return;
+
+    cart = CartManager.get();
+    user = UserManager.get();
+
+    nav.innerHTML = `
+        <a href="#home" id="nav-home">Home</a>
+        <a href="#cart" id="nav-cart">Cart <span id="cart-count">${cart.length}</span></a>
+        <a href="#contact" id="nav-contact">Contact</a>
+        ${user 
+            ? `<span id="nav-user">👤 ${user.email}</span>
+               <button id="logout-btn">Logout</button>`
+            : `<button id="login-btn">Login</button>`
+        }
+    `;
 }
 
 // --- SPA Initialization ---
