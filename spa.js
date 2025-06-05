@@ -72,6 +72,22 @@ const products = [
         color: "White",
         desc: "Timeless design with modern comfort. Soft leather upper with EVA midsole.",
         img: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a"
+    },
+      {
+        id: 9,
+        name: "Nike Air Force 1",
+        price: 149.99,
+        color: "Black",
+        desc: "Legendary style meets premium materials. Full-grain leather upper with classic Air cushioning.",
+        img: "https://images.unsplash.com/photo-1549298916-b41d501d3772"
+    },
+    {
+        id: 10,
+        name: "ASICS Gel-Nimbus",
+        price: 134.99,
+        color: "Blue",
+        desc: "Premium running shoe with GEL cushioning. FlyteFoam technology provides exceptional bounce and comfort.",
+        img: "https://images.unsplash.com/photo-1560769629-975ec94e6a86"
     }
 ];
 
@@ -270,11 +286,36 @@ function renderHome() {
 function renderReadMore(productId) {
     const product = products.find(p => p.id == productId);
     if (!product) return renderHome();
-    document.getElementById('app-content').innerHTML = `...`;
+    
+    document.getElementById('app-content').innerHTML = `
+        <section class="pdp-container" style="max-width:1200px;margin:0 auto;padding:2em;">
+            <div style="display:flex;flex-wrap:wrap;gap:2em;">
+                <div style="flex:1;min-width:300px;">
+                    <img src="${product.img}" alt="${product.name}" 
+                         style="width:100%;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                </div>
+                <div style="flex:1;min-width:300px;">
+                    <h1 style="font-size:2em;margin:0 0 0.5em;color:#222;">${product.name}</h1>
+                    <span class="badge" style="background:${product.color.toLowerCase()};color:#fff;padding:4px 12px;border-radius:4px;font-size:0.9em;">
+                        ${product.color}
+                    </span>
+                    <p style="font-size:1.8em;color:#222;margin:1em 0;">₹${product.price}</p>
+                    <p style="color:#666;line-height:1.6;margin:1em 0;">${product.desc}</p>
+                    <button class="add-to-cart-btn" data-id="${product.id}" 
+                            style="background:#222;color:#fff;padding:1em 2em;border:none;border-radius:6px;cursor:pointer;font-size:1.1em;margin-top:1em;">
+                        Add to Cart
+                    </button>
+                    <a href="#home" style="display:inline-block;margin-top:2em;color:#666;text-decoration:none;">
+                        ← Back to Products
+                    </a>
+                </div>
+            </div>
+        </section>
+    `;
+    
     setupCartButtons();
-    // Push XDM product impression and pageView
-    pushXdmToAlloy(XDM.pageView("Product Details", "Viewing product details", window.location.pathname), ["product-details"]);
-    pushXdmToAlloy(XDM.productImpression(product), ["product-details"]);
+    pushXdmToAlloy(XDM.pageView("Product Details", "Viewing product details", window.location.pathname));
+    pushXdmToAlloy(XDM.productImpression(product));
 }
 
 function renderCart() {
@@ -285,8 +326,30 @@ function renderCart() {
 }
 
 function renderContact() {
-    // ...same as before...
-    pushXdmToAlloy(XDM.pageView("Contact", "Contact and GitHub info", window.location.pathname), ["contact"]);
+    document.getElementById('app-content').innerHTML = `
+        <section style="max-width:800px;margin:0 auto;padding:2em;">
+            <h1 style="font-size:2em;margin-bottom:1em;color:#222;">Contact Us</h1>
+            <div style="background:#fff;padding:2em;border-radius:12px;box-shadow:0 2px 4px rgba(0,0,0,0.08);">
+                <p style="color:#666;line-height:1.6;margin-bottom:1em;">
+                    This is a demo e-commerce site for Adobe Experience Platform integration.
+                </p>
+                <p style="color:#666;line-height:1.6;margin-bottom:1em;">
+                    <strong>Demo Login:</strong><br>
+                    Email: test@test.com<br>
+                    Password: test
+                </p>
+                <p style="color:#666;line-height:1.6;">
+                    <strong>GitHub:</strong><br>
+                    <a href="https://github.com/sankhadanga" target="_blank" 
+                       style="color:#0366d6;text-decoration:none;">
+                        github.com/sankhadanga
+                    </a>
+                </p>
+            </div>
+        </section>
+    `;
+    
+    pushXdmToAlloy(XDM.pageView("Contact", "Contact and GitHub info", window.location.pathname));
 }
 
 // --- Router ---
@@ -312,17 +375,24 @@ function router() {
 // --- UI Event Setup (unchanged, but call XDM on actions) ---
 function setupCartButtons() {
     document.querySelectorAll('.product button[data-id], .add-to-cart-btn').forEach(button => {
-        button.onclick = () => {
+        button.onclick = async function() {
             button.disabled = true;
-            const id = +button.getAttribute('data-id');
-            const product = products.find(p => p.id === id);
-            if (product) {
-                CartManager.add(product);
-                showProductAddedPopup(product.name);
-                pushXdmToAlloy(XDM.addToCart(product, CartManager.get()), ["cart"]);
-                updateCartCount();
+            try {
+                const id = parseInt(this.getAttribute('data-id'));
+                const product = products.find(p => p.id === id);
+                if (product) {
+                    CartManager.add(product);
+                    cart = CartManager.get();
+                    showProductAddedPopup(product.name);
+                    pushXdmToAlloy(XDM.addToCart(product, cart));
+                    updateCartCount();
+                    updateNavUser();
+                }
+            } catch (error) {
+                console.error('Error adding to cart:', error);
+            } finally {
+                button.disabled = false;
             }
-            button.disabled = false;
         };
     });
 }
