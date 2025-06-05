@@ -110,9 +110,15 @@ const SafeStorage = {
 // --- User State ---
 let user = SafeStorage.get('santos_user');
 const UserManager = {
-    get: () => user,
-    set: obj => { user = obj; SafeStorage.set('santos_user', obj); },
-    clear: () => { user = null; SafeStorage.remove('santos_user'); }
+    get: () => SafeStorage.get('santos_user'),
+    set: userObj => {
+        SafeStorage.set('santos_user', userObj);
+        user = userObj;
+    },
+    clear: () => {
+        SafeStorage.remove('santos_user');
+        user = null;
+    }
 };
 
 // --- Cart State ---
@@ -163,20 +169,24 @@ const XDM = {
             color: product.color
         }]
     }),
-    addToCart: (product, cartState) => ({
+     addToCart: (product, cartState) => ({
         eventType: "commerce.productListAdds",
         commerce: {
             productListAdds: { value: 1 },
             order: {
-                priceTotal: cartState.reduce((sum, p) => sum + Number(p.price), 0)
+                priceTotal: cartState.reduce((sum, p) => sum + Number(p.price), 0),
+                currencyCode: "USD",
+                purchaseID: generateId("order")
             }
         },
         productListItems: [{
             SKU: product.id,
             name: product.name,
             priceTotal: product.price,
+            currencyCode: "USD",
             color: product.color,
-            quantity: 1
+            quantity: 1,
+            productAddMethod: "add to cart button"
         }]
     }),
     cartView: cartState => ({
@@ -207,16 +217,36 @@ const XDM = {
     })
 };
 
+// Target Decision Scopes
+const TARGET_SCOPES = {
+    HOME_HERO: "home-hero",
+    PRODUCT_RECOMMENDATIONS: "product-recs",
+    CART_OFFERS: "cart-offers"
+};
+
 // --- Data Layer and Alloy Integration ---
-function pushXdmToAlloy(xdmObj, decisionScopes) {
+function pushXdmToAlloy(xdmObj, decisionScopes = []) {
     if (window.alloy) {
         window.alloy("sendEvent", {
             xdm: xdmObj,
-            decisionScopes: decisionScopes || [],
-            renderDecisions: !!decisionScopes?.length
+            decisionScopes: decisionScopes,
+            renderDecisions: true
+        }).then(result => {
+            // Handle Target propositions
+            const propositions = result.propositions;
+            if (propositions) {
+                propositions.forEach(proposition => {
+                    if (proposition.renderAttempted) return;
+                    
+                    const { scopeDetails } = proposition;
+                    if (scopeDetails && scopeDetails.characteristics && 
+                        scopeDetails.characteristics.target) {
+                        console.log("Target activity:", scopeDetails.activity.name);
+                    }
+                });
+            }
         });
     }
-    // Always push to adobeDataLayer for analytics as well
     window.adobeDataLayer.push({ event: xdmObj.eventType || "custom", xdm: xdmObj });
 }
 
@@ -473,11 +503,13 @@ function showLoginModal() {
                        style="width:100%;padding:0.5em;margin-bottom:1em;border:1px solid #ddd;border-radius:4px;">
                 <input type="password" id="login-pass" placeholder="Password" required 
                        style="width:100%;padding:0.5em;margin-bottom:1em;border:1px solid #ddd;border-radius:4px;">
-                <button type="submit" style="width:100%;background:#222;color:#fff;padding:0.8em;border:none;border-radius:4px;cursor:pointer;">
+                <button type="submit" 
+                        style="width:100%;background:#222;color:#fff;padding:0.8em;border:none;border-radius:4px;cursor:pointer;">
                     Login
                 </button>
             </form>
-            <button id="close-login-modal" style="position:absolute;top:1em;right:1em;background:none;border:none;font-size:1.2em;cursor:pointer;">×</button>
+            <button id="close-login-modal" 
+                    style="position:absolute;top:1em;right:1em;background:none;border:none;font-size:1.2em;cursor:pointer;">×</button>
             <div id="login-error" style="color:#ff4444;margin-top:1em;"></div>
             <div style="margin-top:1em;color:#666;">
                 <strong>Demo Login:</strong><br>
@@ -489,26 +521,35 @@ function showLoginModal() {
 
     document.body.appendChild(modal);
 
-    // Update event handlers
+    // Setup event handlers
+    const form = document.getElementById('email-login-form');
+    const closeBtn = document.getElementById('close-login-modal');
+
+    // Close on background click
     modal.addEventListener('click', e => {
         if (e.target.id === 'login-modal') modal.remove();
     });
 
-    document.getElementById('close-login-modal').addEventListener('click', () => modal.remove());
+    // Close button handler
+    closeBtn.addEventListener('click', () => modal.remove());
 
-    document.getElementById('email-login-form').addEventListener('submit', e => {
+    // Form submission
+    form.addEventListener('submit', e => {
         e.preventDefault();
         const email = document.getElementById('login-email').value.trim();
         const pass = document.getElementById('login-pass').value.trim();
-        
+
         if (email === "test@test.com" && pass === "test") {
-            UserManager.set({ email, provider: "demo" });
+            const userObj = { email, provider: "demo" };
+            UserManager.set(userObj);
             pushXdmToAlloy(XDM.login(email));
             modal.remove();
+            updateNavUser();
             router();
         } else {
-            document.getElementById('login-error').textContent = 
-                "Invalid credentials. Try the demo credentials.";
+            const errorDiv = document.getElementById('login-error');
+            errorDiv.textContent = "Invalid credentials. Try the demo credentials.";
+            errorDiv.style.display = 'block';
         }
     });
 }

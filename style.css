@@ -1,11 +1,20 @@
+:root {
+    --primary-color: #222;
+    --text-color: #666;
+    --bg-color: #f8f9fa;
+    --border-radius: 8px;
+    --shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
 body {
     margin: 0;
-    font-family: system-ui, -apple-system, sans-serif;
-    background: #f8f9fa;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-color);
+    color: var(--text-color);
 }
 
 header {
-    background: #222;
+    background: var(--primary-color);
     color: #fff;
     padding: 1em;
     text-align: center;
@@ -17,21 +26,20 @@ nav {
     display: flex;
     gap: 1em;
     justify-content: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
-nav a {
-    color: #222;
+nav a, nav button {
+    color: var(--primary-color);
     text-decoration: none;
     padding: 0.5em 1em;
-}
-
-nav button {
-    background: none;
     border: none;
-    color: #222;
+    background: none;
     cursor: pointer;
-    padding: 0.5em 1em;
+    font-size: 1em;
 }
 
 .products {
@@ -50,11 +58,12 @@ nav button {
     text-align: center;
     background: #fff;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    transition: box-shadow 0.2s;
+    transition: box-shadow 0.2s, transform 0.2s;
 }
 
 .product:hover {
     box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    transform: translateY(-4px);
 }
 
 .product img {
@@ -96,4 +105,12 @@ footer {
 
 #app-content {
     min-height: 80vh;
+}
+
+/* Target personalization styles */
+.target-offer {
+    border: 2px solid #007bff;
+    padding: 1em;
+    margin: 1em 0;
+    border-radius: var(--border-radius);
 }
