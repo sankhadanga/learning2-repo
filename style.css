@@ -77,6 +77,21 @@ nav a, nav button {
     height: 150px;
     object-fit: cover;
     border-radius: 4px;
+    background: #f8f9fa;
+    will-change: transform;
+    contain: content;
+}
+
+/* Add loading animation */
+.product img:not([src]):not([srcset]) {
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    background: linear-gradient(90deg, #f0f0f0 0px, #f8f8f8 40px, #f0f0f0 80px);
+    background-size: 200% 100%;
+}
+
+@keyframes pulse {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
 }
 
 .product button {
