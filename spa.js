@@ -357,105 +357,146 @@ function renderContact() {
     `;
 }
 
-// Add Login/Logout button to nav and handle login modal
-function updateNavUser() {
-    // Render nav with login/logout
-    const nav = document.querySelector('nav');
-    if (!nav) return;
-    let navHtml = `
-        <a href="#home" id="nav-home">Home</a>
-        <a href="#cart" id="nav-cart">Cart <span id="cart-count">${cart.length}</span></a>
-        <a href="#contact" id="nav-contact">Contact</a>
-    `;
-    if (user) {
-        navHtml += `<span id="nav-user" style="margin-left:1em;">👤 ${user.email}</span>
-        <button id="logout-btn" style="margin-left:1em;">Logout</button>`;
+function router() {
+    const hash = window.location.hash || '#home';
+    
+    // Sync state from storage
+    cart = CartData.getCart();
+    user = UserData.getUser();
+    
+    if (hash.startsWith('#readmore-')) {
+        const pid = hash.replace('#readmore-', '');
+        const product = DataLayer.getProductById(pid);
+        if (product) {
+            renderReadMore(pid);
+            pushPageDataLayer("Product Details", "Viewing product details");
+            pushProductDetailDataLayer(product);
+        } else {
+            renderHome();
+        }
     } else {
-        navHtml += `<button id="login-btn" style="margin-left:1em;">Login</button>`;
+        switch (hash) {
+            case '#home':
+                renderHome();
+                pushPageDataLayer("Home", "Welcome to santos e-comm");
+                break;
+            case '#cart':
+                renderCart();
+                pushPageDataLayer("Cart", "View your cart items");
+                pushCartViewDataLayer();
+                break;
+            case '#contact':
+                renderContact();
+                pushPageDataLayer("Contact", "Contact and GitHub info");
+                break;
+            default:
+                renderHome();
+                pushPageDataLayer("Home", "Welcome to santos e-comm");
+        }
     }
-    nav.innerHTML = navHtml;
-    setupNavTracking();
-    updateCartCount();
+    updateNavUser();
+}// User management functions
+const UserManager = {
+    saveUser(userObj) {
+        UserData.setUser(userObj);
+        user = userObj;
+        router();
+        pushLoginDataLayer(userObj.email);
+    },
+    logoutUser() {
+        UserData.clearUser();
+        user = null;
+        CartData.clearCart();
+        cart = [];
+        router();
+        pushLogoutDataLayer();
+    }
+};
 
-    // Attach login/logout handlers
-    const loginBtn = document.getElementById('login-btn');
-    if (loginBtn) {
-        loginBtn.onclick = showLoginModal;
-    }
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.onclick = logoutUser;
-    }
+// Login modal component
+function createLoginModal() {
+    return `
+        <div id="login-modal" class="modal" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;">
+            <div class="modal-content" style="background:#fff;padding:2em;border-radius:8px;min-width:300px;max-width:90vw;position:relative;">
+                <h2>Login</h2>
+                <form id="email-login-form">
+                    <input type="email" id="login-email" placeholder="Email" required>
+                    <input type="password" id="login-pass" placeholder="Password" required>
+                    <button type="submit">Login</button>
+                </form>
+                <button id="close-login-modal">&times;</button>
+                <div id="login-error"></div>
+                <div class="demo-creds">
+                    <b>Demo credentials:</b><br>
+                    Email: <code>test@test.com</code><br>
+                    Password: <code>test</code>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
-// Show login modal with demo credentials
 function showLoginModal() {
-    const modal = document.createElement('div');
-    modal.id = "login-modal";
-    modal.style = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;";
-    modal.innerHTML = `
-      <div style="background:#fff;padding:2em 2em 1em 2em;border-radius:8px;min-width:300px;max-width:90vw;position:relative;">
-        <h2>Login</h2>
-        <form id="email-login-form">
-          <input type="email" id="login-email" placeholder="Email" required style="width:100%;margin-bottom:0.5em;padding:0.5em;">
-          <input type="password" id="login-pass" placeholder="Password" required style="width:100%;margin-bottom:0.5em;padding:0.5em;">
-          <button type="submit" style="width:100%;background:#222;color:#fff;padding:0.5em 0;border:none;border-radius:4px;">Login</button>
-        </form>
-        <button id="close-login-modal" style="position:absolute;top:0.5em;right:0.5em;background:none;border:none;font-size:1.2em;">&times;</button>
-        <div id="login-error" style="color:red;margin-top:0.5em;"></div>
-        <div style="margin-top:1em;font-size:0.95em;color:#666;">
-            <b>Demo credentials:</b><br>
-            Email: <code>test@test.com</code><br>
-            Password: <code>test</code>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
+    // Remove existing modal if any
+    const existingModal = document.getElementById('login-modal');
+    if (existingModal) existingModal.remove();
 
-    document.getElementById('close-login-modal').onclick = () => modal.remove();
+    // Add modal to DOM
+    document.body.insertAdjacentHTML('beforeend', createLoginModal());
 
-    document.getElementById('email-login-form').onsubmit = (e) => {
+    // Setup event listeners
+    const modal = document.getElementById('login-modal');
+    const form = document.getElementById('email-login-form');
+    const closeBtn = document.getElementById('close-login-modal');
+
+    // Close modal on background click
+    modal.addEventListener('click', e => {
+        if (e.target.id === 'login-modal') modal.remove();
+    });
+
+    // Close button handler
+    closeBtn.addEventListener('click', () => modal.remove());
+
+    // Form submission handler
+    form.addEventListener('submit', e => {
         e.preventDefault();
         const email = document.getElementById('login-email').value.trim();
         const pass = document.getElementById('login-pass').value.trim();
+
         if (email === "test@test.com" && pass === "test") {
-            saveUser({ email, provider: "demo" });
+            UserManager.saveUser({ email, provider: "demo" });
             modal.remove();
-            router();
         } else {
             document.getElementById('login-error').textContent = "Invalid credentials. Try the demo credentials.";
         }
-    };
+    });
 }
 
-function showProductAddedPopup(productName) {
-    // Remove any existing popup
-    const oldPopup = document.getElementById('product-added-popup');
-    if (oldPopup) oldPopup.remove();
+// Update navigation with user state
+function updateNavUser() {
+    const nav = document.querySelector('nav');
+    if (!nav) return;
 
-    const popup = document.createElement('div');
-    popup.id = 'product-added-popup';
-    popup.textContent = `Product "${productName}" has been added successfully.`;
-    popup.style = `
-        position: fixed;
-        top: 30px;
-        right: 30px;
-        background: #28a745;
-        color: #fff;
-        padding: 1em 1.5em;
-        border-radius: 8px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-        font-size: 1.1em;
-        z-index: 2000;
-        opacity: 0.95;
-        transition: opacity 0.3s;
+    cart = CartData.getCart();
+    user = UserData.getUser();
+
+    const navHtml = `
+        <a href="#home" id="nav-home">Home</a>
+        <a href="#cart" id="nav-cart">Cart <span id="cart-count">${cart.length}</span></a>
+        <a href="#contact" id="nav-contact">Contact</a>
+        ${user 
+            ? `<span id="nav-user">👤 ${user.email}</span>
+               <button id="logout-btn">Logout</button>`
+            : `<button id="login-btn">Login</button>`
+        }
     `;
-    document.body.appendChild(popup);
 
-    setTimeout(() => {
-        popup.style.opacity = '0';
-        setTimeout(() => popup.remove(), 500);
-    }, 1800);
+    nav.innerHTML = navHtml;
+    setupNavTracking();
+    
+    // Attach login/logout handlers
+    document.getElementById('login-btn')?.addEventListener('click', showLoginModal);
+    document.getElementById('logout-btn')?.addEventListener('click', UserManager.logoutUser);
 }
 
 // --- Enhanced Adobe Client Data Layer for Analytics ---
@@ -649,17 +690,18 @@ function setupNavTracking() {
 }
 
 function setupCartButtons() {
-    const buttons = document.querySelectorAll('.product button, article button[data-id], .add-to-cart-btn');
+    const buttons = document.querySelectorAll('.product button[data-id], .add-to-cart-btn');
     buttons.forEach(button => {
-        button.onclick = function () {
+        button.onclick = function() {
             const id = parseInt(this.getAttribute('data-id'));
-            const product = products.find(p => p.id === id);
+            const product = DataLayer.getProductById(id);
             if (product) {
                 CartData.addToCart(product);
                 cart = CartData.getCart();
                 showProductAddedPopup(product.name);
                 pushProductAddDataLayer(product);
                 updateCartCount();
+                updateNavUser();
             }
         };
     });
@@ -668,12 +710,13 @@ function setupCartButtons() {
 function setupRemoveButtons() {
     const removeButtons = document.querySelectorAll('.remove-btn');
     removeButtons.forEach(button => {
-        button.onclick = function () {
+        button.onclick = function() {
             const idx = parseInt(this.getAttribute('data-idx'));
             CartData.removeFromCart(idx);
             cart = CartData.getCart();
             renderCart();
             updateCartCount();
+            updateNavUser();
         };
     });
 }
@@ -740,1295 +783,12 @@ function showLoginModal() {
         const email = document.getElementById('login-email').value.trim();
         const pass = document.getElementById('login-pass').value.trim();
         if (email === "test@test.com" && pass === "test") {
-            saveUser({ email, provider: "demo" });
+            UserManager.saveUser({ email, provider: "demo" });
             modal.remove();
             router();
         } else {
-            document.getElementById('login-error').textContent = "Invalid credentials. Try the demo credentials.";
-        }
-    };
-}
-
-function showProductAddedPopup(productName) {
-    // Remove any existing popup
-    const oldPopup = document.getElementById('product-added-popup');
-    if (oldPopup) oldPopup.remove();
-
-    const popup = document.createElement('div');
-    popup.id = 'product-added-popup';
-    popup.textContent = `Product "${productName}" has been added successfully.`;
-    popup.style = `
-        position: fixed;
-        top: 30px;
-        right: 30px;
-        background: #28a745;
-        color: #fff;
-        padding: 1em 1.5em;
-        border-radius: 8px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-        font-size: 1.1em;
-        z-index: 2000;
-        opacity: 0.95;
-        transition: opacity 0.3s;
-    `;
-    document.body.appendChild(popup);
-
-    setTimeout(() => {
-        popup.style.opacity = '0';
-        setTimeout(() => popup.remove(), 500);
-    }, 1800);
-}
-
-// --- Enhanced Adobe Client Data Layer for Analytics ---
-
-// Utility to generate unique IDs for components/pages
-function generateId(prefix = "cmp") {
-    return prefix + "-" + Math.random().toString(36).substr(2, 10);
-}
-
-// Enhanced: Push page view event with more analytics-friendly fields
-function pushPageDataLayer(pageTitle, pageDesc, path = window.location.pathname) {
-    const pageId = generateId("page");
-    window.adobeDataLayer.push({
-        event: "pageView",
-        page: {
-            pageInfo: {
-                pageID: pageId,
-                pageName: pageTitle,
-                pageURL: window.location.href,
-                pagePath: path,
-                language: "en-US",
-                siteSection: "santos-ecomm",
-                siteSubsection: pageTitle.toLowerCase().replace(/\s/g, "-"),
-                server: window.location.hostname
-            },
-            attributes: {
-                description: pageDesc,
-                template: "/conf/santos/settings/wcm/templates/spa-template",
-                tags: [],
-                timestamp: new Date().toISOString()
-            }
-        }
-    });
-}
-
-// Enhanced: Push navigation event
-function pushNavDataLayer(label, url) {
-    const navId = generateId("nav");
-    window.adobeDataLayer.push({
-        event: "navigationClick",
-        navigation: {
-            navID: navId,
-            navLabel: label,
-            navURL: url,
-            timestamp: new Date().toISOString()
-        }
-    });
-}
-
-// Enhanced: Push product add-to-cart event with commerce fields
-function pushProductAddDataLayer(product) {
-    const cmpId = generateId("product");
-    window.adobeDataLayer.push({
-        event: "addToCart",
-        ecommerce: {
-            action: "add",
-            productList: [{
-                productID: product.id,
-                productName: product.name,
-                productDescription: product.desc,
-                price: product.price,
-                color: product.color,
-                imageURL: product.img,
-                quantity: 1
-            }],
-            cart: {
-                cartTotal: cart.reduce((sum, item) => sum + Number(item.price), 0),
-                cartCount: cart.length
-            }
-        },
-        attributes: {
-            timestamp: new Date().toISOString()
-        }
-    });
-}
-
-// Enhanced: Push cart view event
-function pushCartViewDataLayer() {
-    window.adobeDataLayer.push({
-        event: "cartView",
-        ecommerce: {
-            cart: {
-                cartTotal: cart.reduce((sum, item) => sum + Number(item.price), 0),
-                cartCount: cart.length,
-                products: cart.map(item => ({
-                    productID: item.id,
-                    productName: item.name,
-                    price: item.price,
-                    color: item.color,
-                    imageURL: item.img,
-                    quantity: 1
-                }))
-            }
-        },
-        attributes: {
-            timestamp: new Date().toISOString()
-        }
-    });
-}
-
-// Enhanced: Push product detail view event
-function pushProductDetailDataLayer(product) {
-    window.adobeDataLayer.push({
-        event: "productDetailView",
-        ecommerce: {
-            detail: {
-                productID: product.id,
-                productName: product.name,
-                productDescription: product.desc,
-                price: product.price,
-                color: product.color,
-                imageURL: product.img
-            }
-        },
-        attributes: {
-            timestamp: new Date().toISOString()
-        }
-    });
-}
-
-// --- Usage in SPA ---
-
-function router() {
-    const hash = window.location.hash || '#home';
-    if (hash.startsWith('#readmore-')) {
-        const pid = hash.replace('#readmore-', '');
-        const product = products.find(p => p.id == pid);
-        renderReadMore(pid);
-        updateNavUser();
-        pushPageDataLayer("Product Details", "Viewing product details");
-        if (product) pushProductDetailDataLayer(product);
-        return;
-    }
-    switch (hash) {
-        case '#home':
-            renderHome();
-            pushPageDataLayer("Home", "Welcome to santos e-comm");
-            break;
-        case '#cart':
-            renderCart();
-            pushPageDataLayer("Cart", "View your cart items");
-            pushCartViewDataLayer();
-            break;
-        case '#contact':
-            renderContact();
-            pushPageDataLayer("Contact", "Contact and GitHub info");
-            break;
-        default:
-            renderHome();
-            pushPageDataLayer("Home", "Welcome to santos e-comm");
-    }
-    // Update cart count on navigation
-    const cartCountSpan = document.getElementById('cart-count');
-    if (cartCountSpan) cartCountSpan.textContent = cart.length;
-    updateNavUser();
-}
-
-// Listen for hash changes to trigger router
-window.addEventListener('hashchange', router);
-
-// Call router and nav tracking on DOMContentLoaded
-document.addEventListener('DOMContentLoaded', () => {
-    router();
-    // Only call setupNavTracking() here if your nav is static!
-    // If nav is dynamic, call setupNavTracking() after rendering nav in updateNavUser()
-    updateCartCount();
-});
-
-// Utility to update cart count in nav
-function updateCartCount() {
-    cart = CartData.getCart(); // <-- always get latest cart
-    const cartCountSpan = document.getElementById('cart-count');
-    if (cartCountSpan) cartCountSpan.textContent = cart.length;
-}
-
-// Navigation click tracking
-function setupNavTracking() {
-    const navLinks = document.querySelectorAll('nav a');
-    navLinks.forEach(link => {
-        link.addEventListener('click', function (e) {
-            e.preventDefault(); // Prevent default navigation
-            const href = this.getAttribute('href');
-            if (window.location.hash !== href) {
-                window.location.hash = href; // This will trigger router()
-            } else {
-                router(); // If already on the same hash, force rerender
-            }
-            pushNavDataLayer(this.textContent, href);
-        });
-    });
-}
-
-function setupCartButtons() {
-    const buttons = document.querySelectorAll('.product button, article button[data-id], .add-to-cart-btn');
-    buttons.forEach(button => {
-        button.onclick = function () {
-            const id = parseInt(this.getAttribute('data-id'));
-            const product = products.find(p => p.id === id);
-            if (product) {
-                CartData.addToCart(product);
-                cart = CartData.getCart();
-                showProductAddedPopup(product.name);
-                pushProductAddDataLayer(product);
-                updateCartCount();
-            }
-        };
-    });
-}
-
-function setupRemoveButtons() {
-    const removeButtons = document.querySelectorAll('.remove-btn');
-    removeButtons.forEach(button => {
-        button.onclick = function () {
-            const idx = parseInt(this.getAttribute('data-idx'));
-            CartData.removeFromCart(idx);
-            cart = CartData.getCart();
-            renderCart();
-            updateCartCount();
-        };
-    });
-}
-
-// Update cart count after rendering nav/user
-function updateNavUser() {
-    // Render nav with login/logout
-    const nav = document.querySelector('nav');
-    if (!nav) return;
-    let navHtml = `
-        <a href="#home" id="nav-home">Home</a>
-        <a href="#cart" id="nav-cart">Cart <span id="cart-count">${cart.length}</span></a>
-        <a href="#contact" id="nav-contact">Contact</a>
-    `;
-    if (user) {
-        navHtml += `<span id="nav-user" style="margin-left:1em;">👤 ${user.email}</span>
-        <button id="logout-btn" style="margin-left:1em;">Logout</button>`;
-    } else {
-        navHtml += `<button id="login-btn" style="margin-left:1em;">Login</button>`;
-    }
-    nav.innerHTML = navHtml;
-    setupNavTracking();
-    updateCartCount();
-
-    // Attach login/logout handlers
-    const loginBtn = document.getElementById('login-btn');
-    if (loginBtn) {
-        loginBtn.onclick = showLoginModal;
-    }
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.onclick = logoutUser;
-    }
-}
-
-// Show login modal with demo credentials
-function showLoginModal() {
-    const modal = document.createElement('div');
-    modal.id = "login-modal";
-    modal.style = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;";
-    modal.innerHTML = `
-      <div style="background:#fff;padding:2em 2em 1em 2em;border-radius:8px;min-width:300px;max-width:90vw;position:relative;">
-        <h2>Login</h2>
-        <form id="email-login-form">
-          <input type="email" id="login-email" placeholder="Email" required style="width:100%;margin-bottom:0.5em;padding:0.5em;">
-          <input type="password" id="login-pass" placeholder="Password" required style="width:100%;margin-bottom:0.5em;padding:0.5em;">
-          <button type="submit" style="width:100%;background:#222;color:#fff;padding:0.5em 0;border:none;border-radius:4px;">Login</button>
-        </form>
-        <button id="close-login-modal" style="position:absolute;top:0.5em;right:0.5em;background:none;border:none;font-size:1.2em;">&times;</button>
-        <div id="login-error" style="color:red;margin-top:0.5em;"></div>
-        <div style="margin-top:1em;font-size:0.95em;color:#666;">
-            <b>Demo credentials:</b><br>
-            Email: <code>test@test.com</code><br>
-            Password: <code>test</code>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-
-    document.getElementById('close-login-modal').onclick = () => modal.remove();
-
-    document.getElementById('email-login-form').onsubmit = (e) => {
-        e.preventDefault();
-        const email = document.getElementById('login-email').value.trim();
-        const pass = document.getElementById('login-pass').value.trim();
-        if (email === "test@test.com" && pass === "test") {
-            saveUser({ email, provider: "demo" });
-            modal.remove();
-            router();
-        } else {
-            document.getElementById('login-error').textContent = "Invalid credentials. Try the demo credentials.";
-        }
-    };
-}
-
-function showProductAddedPopup(productName) {
-    // Remove any existing popup
-    const oldPopup = document.getElementById('product-added-popup');
-    if (oldPopup) oldPopup.remove();
-
-    const popup = document.createElement('div');
-    popup.id = 'product-added-popup';
-    popup.textContent = `Product "${productName}" has been added successfully.`;
-    popup.style = `
-        position: fixed;
-        top: 30px;
-        right: 30px;
-        background: #28a745;
-        color: #fff;
-        padding: 1em 1.5em;
-        border-radius: 8px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-        font-size: 1.1em;
-        z-index: 2000;
-        opacity: 0.95;
-        transition: opacity 0.3s;
-    `;
-    document.body.appendChild(popup);
-
-    setTimeout(() => {
-        popup.style.opacity = '0';
-        setTimeout(() => popup.remove(), 500);
-    }, 1800);
-}
-
-// --- Enhanced Adobe Client Data Layer for Analytics ---
-
-// Utility to generate unique IDs for components/pages
-function generateId(prefix = "cmp") {
-    return prefix + "-" + Math.random().toString(36).substr(2, 10);
-}
-
-// Enhanced: Push page view event with more analytics-friendly fields
-function pushPageDataLayer(pageTitle, pageDesc, path = window.location.pathname) {
-    const pageId = generateId("page");
-    window.adobeDataLayer.push({
-        event: "pageView",
-        page: {
-            pageInfo: {
-                pageID: pageId,
-                pageName: pageTitle,
-                pageURL: window.location.href,
-                pagePath: path,
-                language: "en-US",
-                siteSection: "santos-ecomm",
-                siteSubsection: pageTitle.toLowerCase().replace(/\s/g, "-"),
-                server: window.location.hostname
-            },
-            attributes: {
-                description: pageDesc,
-                template: "/conf/santos/settings/wcm/templates/spa-template",
-                tags: [],
-                timestamp: new Date().toISOString()
-            }
-        }
-    });
-}
-
-// Enhanced: Push navigation event
-function pushNavDataLayer(label, url) {
-    const navId = generateId("nav");
-    window.adobeDataLayer.push({
-        event: "navigationClick",
-        navigation: {
-            navID: navId,
-            navLabel: label,
-            navURL: url,
-            timestamp: new Date().toISOString()
-        }
-    });
-}
-
-// Enhanced: Push product add-to-cart event with commerce fields
-function pushProductAddDataLayer(product) {
-    const cmpId = generateId("product");
-    window.adobeDataLayer.push({
-        event: "addToCart",
-        ecommerce: {
-            action: "add",
-            productList: [{
-                productID: product.id,
-                productName: product.name,
-                productDescription: product.desc,
-                price: product.price,
-                color: product.color,
-                imageURL: product.img,
-                quantity: 1
-            }],
-            cart: {
-                cartTotal: cart.reduce((sum, item) => sum + Number(item.price), 0),
-                cartCount: cart.length
-            }
-        },
-        attributes: {
-            timestamp: new Date().toISOString()
-        }
-    });
-}
-
-// Enhanced: Push cart view event
-function pushCartViewDataLayer() {
-    window.adobeDataLayer.push({
-        event: "cartView",
-        ecommerce: {
-            cart: {
-                cartTotal: cart.reduce((sum, item) => sum + Number(item.price), 0),
-                cartCount: cart.length,
-                products: cart.map(item => ({
-                    productID: item.id,
-                    productName: item.name,
-                    price: item.price,
-                    color: item.color,
-                    imageURL: item.img,
-                    quantity: 1
-                }))
-            }
-        },
-        attributes: {
-            timestamp: new Date().toISOString()
-        }
-    });
-}
-
-// Enhanced: Push product detail view event
-function pushProductDetailDataLayer(product) {
-    window.adobeDataLayer.push({
-        event: "productDetailView",
-        ecommerce: {
-            detail: {
-                productID: product.id,
-                productName: product.name,
-                productDescription: product.desc,
-                price: product.price,
-                color: product.color,
-                imageURL: product.img
-            }
-        },
-        attributes: {
-            timestamp: new Date().toISOString()
-        }
-    });
-}
-
-// --- Usage in SPA ---
-
-function router() {
-    const hash = window.location.hash || '#home';
-    if (hash.startsWith('#readmore-')) {
-        const pid = hash.replace('#readmore-', '');
-        const product = products.find(p => p.id == pid);
-        renderReadMore(pid);
-        updateNavUser();
-        pushPageDataLayer("Product Details", "Viewing product details");
-        if (product) pushProductDetailDataLayer(product);
-        return;
-    }
-    switch (hash) {
-        case '#home':
-            renderHome();
-            pushPageDataLayer("Home", "Welcome to santos e-comm");
-            break;
-        case '#cart':
-            renderCart();
-            pushPageDataLayer("Cart", "View your cart items");
-            pushCartViewDataLayer();
-            break;
-        case '#contact':
-            renderContact();
-            pushPageDataLayer("Contact", "Contact and GitHub info");
-            break;
-        default:
-            renderHome();
-            pushPageDataLayer("Home", "Welcome to santos e-comm");
-    }
-    // Update cart count on navigation
-    const cartCountSpan = document.getElementById('cart-count');
-    if (cartCountSpan) cartCountSpan.textContent = cart.length;
-    updateNavUser();
-}
-
-// Listen for hash changes to trigger router
-window.addEventListener('hashchange', router);
-
-// Call router and nav tracking on DOMContentLoaded
-document.addEventListener('DOMContentLoaded', () => {
-    router();
-    // Only call setupNavTracking() here if your nav is static!
-    // If nav is dynamic, call setupNavTracking() after rendering nav in updateNavUser()
-    updateCartCount();
-});
-
-// Utility to update cart count in nav
-function updateCartCount() {
-    cart = CartData.getCart(); // <-- always get latest cart
-    const cartCountSpan = document.getElementById('cart-count');
-    if (cartCountSpan) cartCountSpan.textContent = cart.length;
-}
-
-// Navigation click tracking
-function setupNavTracking() {
-    const navLinks = document.querySelectorAll('nav a');
-    navLinks.forEach(link => {
-        link.addEventListener('click', function (e) {
-            e.preventDefault(); // Prevent default navigation
-            const href = this.getAttribute('href');
-            if (window.location.hash !== href) {
-                window.location.hash = href; // This will trigger router()
-            } else {
-                router(); // If already on the same hash, force rerender
-            }
-            pushNavDataLayer(this.textContent, href);
-        });
-    });
-}
-
-function setupCartButtons() {
-    const buttons = document.querySelectorAll('.product button, article button[data-id], .add-to-cart-btn');
-    buttons.forEach(button => {
-        button.onclick = function () {
-            const id = parseInt(this.getAttribute('data-id'));
-            const product = products.find(p => p.id === id);
-            if (product) {
-                CartData.addToCart(product);
-                cart = CartData.getCart();
-                showProductAddedPopup(product.name);
-                pushProductAddDataLayer(product);
-                updateCartCount();
-            }
-        };
-    });
-}
-
-function setupRemoveButtons() {
-    const removeButtons = document.querySelectorAll('.remove-btn');
-    removeButtons.forEach(button => {
-        button.onclick = function () {
-            const idx = parseInt(this.getAttribute('data-idx'));
-            CartData.removeFromCart(idx);
-            cart = CartData.getCart();
-            renderCart();
-            updateCartCount();
-        };
-    });
-}
-
-// Update cart count after rendering nav/user
-function updateNavUser() {
-    // Render nav with login/logout
-    const nav = document.querySelector('nav');
-    if (!nav) return;
-    let navHtml = `
-        <a href="#home" id="nav-home">Home</a>
-        <a href="#cart" id="nav-cart">Cart <span id="cart-count">${cart.length}</span></a>
-        <a href="#contact" id="nav-contact">Contact</a>
-    `;
-    if (user) {
-        navHtml += `<span id="nav-user" style="margin-left:1em;">👤 ${user.email}</span>
-        <button id="logout-btn" style="margin-left:1em;">Logout</button>`;
-    } else {
-        navHtml += `<button id="login-btn" style="margin-left:1em;">Login</button>`;
-    }
-    nav.innerHTML = navHtml;
-    setupNavTracking();
-    updateCartCount();
-
-    // Attach login/logout handlers
-    const loginBtn = document.getElementById('login-btn');
-    if (loginBtn) {
-        loginBtn.onclick = showLoginModal;
-    }
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.onclick = logoutUser;
-    }
-}
-
-// Show login modal with demo credentials
-function showLoginModal() {
-    const modal = document.createElement('div');
-    modal.id = "login-modal";
-    modal.style = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;";
-    modal.innerHTML = `
-      <div style="background:#fff;padding:2em 2em 1em 2em;border-radius:8px;min-width:300px;max-width:90vw;position:relative;">
-        <h2>Login</h2>
-        <form id="email-login-form">
-          <input type="email" id="login-email" placeholder="Email" required style="width:100%;margin-bottom:0.5em;padding:0.5em;">
-          <input type="password" id="login-pass" placeholder="Password" required style="width:100%;margin-bottom:0.5em;padding:0.5em;">
-          <button type="submit" style="width:100%;background:#222;color:#fff;padding:0.5em 0;border:none;border-radius:4px;">Login</button>
-        </form>
-        <button id="close-login-modal" style="position:absolute;top:0.5em;right:0.5em;background:none;border:none;font-size:1.2em;">&times;</button>
-        <div id="login-error" style="color:red;margin-top:0.5em;"></div>
-        <div style="margin-top:1em;font-size:0.95em;color:#666;">
-            <b>Demo credentials:</b><br>
-            Email: <code>test@test.com</code><br>
-            Password: <code>test</code>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-
-    document.getElementById('close-login-modal').onclick = () => modal.remove();
-
-    document.getElementById('email-login-form').onsubmit = (e) => {
-        e.preventDefault();
-        const email = document.getElementById('login-email').value.trim();
-        const pass = document.getElementById('login-pass').value.trim();
-        if (email === "test@test.com" && pass === "test") {
-            saveUser({ email, provider: "demo" });
-            modal.remove();
-            router();
-        } else {
-            document.getElementById('login-error').textContent = "Invalid credentials. Try the demo credentials.";
-        }
-    };
-}
-
-function showProductAddedPopup(productName) {
-    // Remove any existing popup
-    const oldPopup = document.getElementById('product-added-popup');
-    if (oldPopup) oldPopup.remove();
-
-    const popup = document.createElement('div');
-    popup.id = 'product-added-popup';
-    popup.textContent = `Product "${productName}" has been added successfully.`;
-    popup.style = `
-        position: fixed;
-        top: 30px;
-        right: 30px;
-        background: #28a745;
-        color: #fff;
-        padding: 1em 1.5em;
-        border-radius: 8px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-        font-size: 1.1em;
-        z-index: 2000;
-        opacity: 0.95;
-        transition: opacity 0.3s;
-    `;
-    document.body.appendChild(popup);
-
-    setTimeout(() => {
-        popup.style.opacity = '0';
-        setTimeout(() => popup.remove(), 500);
-    }, 1800);
-}
-
-// --- Enhanced Adobe Client Data Layer for Analytics ---
-
-// Utility to generate unique IDs for components/pages
-function generateId(prefix = "cmp") {
-    return prefix + "-" + Math.random().toString(36).substr(2, 10);
-}
-
-// Enhanced: Push page view event with more analytics-friendly fields
-function pushPageDataLayer(pageTitle, pageDesc, path = window.location.pathname) {
-    const pageId = generateId("page");
-    window.adobeDataLayer.push({
-        event: "pageView",
-        page: {
-            pageInfo: {
-                pageID: pageId,
-                pageName: pageTitle,
-                pageURL: window.location.href,
-                pagePath: path,
-                language: "en-US",
-                siteSection: "santos-ecomm",
-                siteSubsection: pageTitle.toLowerCase().replace(/\s/g, "-"),
-                server: window.location.hostname
-            },
-            attributes: {
-                description: pageDesc,
-                template: "/conf/santos/settings/wcm/templates/spa-template",
-                tags: [],
-                timestamp: new Date().toISOString()
-            }
-        }
-    });
-}
-
-// Enhanced: Push navigation event
-function pushNavDataLayer(label, url) {
-    const navId = generateId("nav");
-    window.adobeDataLayer.push({
-        event: "navigationClick",
-        navigation: {
-            navID: navId,
-            navLabel: label,
-            navURL: url,
-            timestamp: new Date().toISOString()
-        }
-    });
-}
-
-// Enhanced: Push product add-to-cart event with commerce fields
-function pushProductAddDataLayer(product) {
-    const cmpId = generateId("product");
-    window.adobeDataLayer.push({
-        event: "addToCart",
-        ecommerce: {
-            action: "add",
-            productList: [{
-                productID: product.id,
-                productName: product.name,
-                productDescription: product.desc,
-                price: product.price,
-                color: product.color,
-                imageURL: product.img,
-                quantity: 1
-            }],
-            cart: {
-                cartTotal: cart.reduce((sum, item) => sum + Number(item.price), 0),
-                cartCount: cart.length
-            }
-        },
-        attributes: {
-            timestamp: new Date().toISOString()
-        }
-    });
-}
-
-// Enhanced: Push cart view event
-function pushCartViewDataLayer() {
-    window.adobeDataLayer.push({
-        event: "cartView",
-        ecommerce: {
-            cart: {
-                cartTotal: cart.reduce((sum, item) => sum + Number(item.price), 0),
-                cartCount: cart.length,
-                products: cart.map(item => ({
-                    productID: item.id,
-                    productName: item.name,
-                    price: item.price,
-                    color: item.color,
-                    imageURL: item.img,
-                    quantity: 1
-                }))
-            }
-        },
-        attributes: {
-            timestamp: new Date().toISOString()
-        }
-    });
-}
-
-// Enhanced: Push product detail view event
-function pushProductDetailDataLayer(product) {
-    window.adobeDataLayer.push({
-        event: "productDetailView",
-        ecommerce: {
-            detail: {
-                productID: product.id,
-                productName: product.name,
-                productDescription: product.desc,
-                price: product.price,
-                color: product.color,
-                imageURL: product.img
-            }
-        },
-        attributes: {
-            timestamp: new Date().toISOString()
-        }
-    });
-}
-
-// --- Usage in SPA ---
-
-function router() {
-    const hash = window.location.hash || '#home';
-    if (hash.startsWith('#readmore-')) {
-        const pid = hash.replace('#readmore-', '');
-        const product = products.find(p => p.id == pid);
-        renderReadMore(pid);
-        updateNavUser();
-        pushPageDataLayer("Product Details", "Viewing product details");
-        if (product) pushProductDetailDataLayer(product);
-        return;
-    }
-    switch (hash) {
-        case '#home':
-            renderHome();
-            pushPageDataLayer("Home", "Welcome to santos e-comm");
-            break;
-        case '#cart':
-            renderCart();
-            pushPageDataLayer("Cart", "View your cart items");
-            pushCartViewDataLayer();
-            break;
-        case '#contact':
-            renderContact();
-            pushPageDataLayer("Contact", "Contact and GitHub info");
-            break;
-        default:
-            renderHome();
-            pushPageDataLayer("Home", "Welcome to santos e-comm");
-    }
-    // Update cart count on navigation
-    const cartCountSpan = document.getElementById('cart-count');
-    if (cartCountSpan) cartCountSpan.textContent = cart.length;
-    updateNavUser();
-}
-
-// Listen for hash changes to trigger router
-window.addEventListener('hashchange', router);
-
-// Call router and nav tracking on DOMContentLoaded
-document.addEventListener('DOMContentLoaded', () => {
-    router();
-    // Only call setupNavTracking() here if your nav is static!
-    // If nav is dynamic, call setupNavTracking() after rendering nav in updateNavUser()
-    updateCartCount();
-});
-
-// Utility to update cart count in nav
-function updateCartCount() {
-    cart = CartData.getCart(); // <-- always get latest cart
-    const cartCountSpan = document.getElementById('cart-count');
-    if (cartCountSpan) cartCountSpan.textContent = cart.length;
-}
-
-// Navigation click tracking
-function setupNavTracking() {
-    const navLinks = document.querySelectorAll('nav a');
-    navLinks.forEach(link => {
-        link.addEventListener('click', function (e) {
-            e.preventDefault(); // Prevent default navigation
-            const href = this.getAttribute('href');
-            if (window.location.hash !== href) {
-                window.location.hash = href; // This will trigger router()
-            } else {
-                router(); // If already on the same hash, force rerender
-            }
-            pushNavDataLayer(this.textContent, href);
-        });
-    });
-}
-
-function setupCartButtons() {
-    const buttons = document.querySelectorAll('.product button, article button[data-id], .add-to-cart-btn');
-    buttons.forEach(button => {
-        button.onclick = function () {
-            const id = parseInt(this.getAttribute('data-id'));
-            const product = products.find(p => p.id === id);
-            if (product) {
-                CartData.addToCart(product);
-                cart = CartData.getCart();
-                showProductAddedPopup(product.name);
-                pushProductAddDataLayer(product);
-                updateCartCount();
-            }
-        };
-    });
-}
-
-function setupRemoveButtons() {
-    const removeButtons = document.querySelectorAll('.remove-btn');
-    removeButtons.forEach(button => {
-        button.onclick = function () {
-            const idx = parseInt(this.getAttribute('data-idx'));
-            CartData.removeFromCart(idx);
-            cart = CartData.getCart();
-            renderCart();
-            updateCartCount();
-        };
-    });
-}
-
-// Update cart count after rendering nav/user
-function updateNavUser() {
-    // Render nav with login/logout
-    const nav = document.querySelector('nav');
-    if (!nav) return;
-    let navHtml = `
-        <a href="#home" id="nav-home">Home</a>
-        <a href="#cart" id="nav-cart">Cart <span id="cart-count">${cart.length}</span></a>
-        <a href="#contact" id="nav-contact">Contact</a>
-    `;
-    if (user) {
-        navHtml += `<span id="nav-user" style="margin-left:1em;">👤 ${user.email}</span>
-        <button id="logout-btn" style="margin-left:1em;">Logout</button>`;
-    } else {
-        navHtml += `<button id="login-btn" style="margin-left:1em;">Login</button>`;
-    }
-    nav.innerHTML = navHtml;
-    setupNavTracking();
-    updateCartCount();
-
-    // Attach login/logout handlers
-    const loginBtn = document.getElementById('login-btn');
-    if (loginBtn) {
-        loginBtn.onclick = showLoginModal;
-    }
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.onclick = logoutUser;
-    }
-}
-
-// Show login modal with demo credentials
-function showLoginModal() {
-    const modal = document.createElement('div');
-    modal.id = "login-modal";
-    modal.style = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;";
-    modal.innerHTML = `
-      <div style="background:#fff;padding:2em 2em 1em 2em;border-radius:8px;min-width:300px;max-width:90vw;position:relative;">
-        <h2>Login</h2>
-        <form id="email-login-form">
-          <input type="email" id="login-email" placeholder="Email" required style="width:100%;margin-bottom:0.5em;padding:0.5em;">
-          <input type="password" id="login-pass" placeholder="Password" required style="width:100%;margin-bottom:0.5em;padding:0.5em;">
-          <button type="submit" style="width:100%;background:#222;color:#fff;padding:0.5em 0;border:none;border-radius:4px;">Login</button>
-        </form>
-        <button id="close-login-modal" style="position:absolute;top:0.5em;right:0.5em;background:none;border:none;font-size:1.2em;">&times;</button>
-        <div id="login-error" style="color:red;margin-top:0.5em;"></div>
-        <div style="margin-top:1em;font-size:0.95em;color:#666;">
-            <b>Demo credentials:</b><br>
-            Email: <code>test@test.com</code><br>
-            Password: <code>test</code>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-
-    document.getElementById('close-login-modal').onclick = () => modal.remove();
-
-    document.getElementById('email-login-form').onsubmit = (e) => {
-        e.preventDefault();
-        const email = document.getElementById('login-email').value.trim();
-        const pass = document.getElementById('login-pass').value.trim();
-        if (email === "test@test.com" && pass === "test") {
-            saveUser({ email, provider: "demo" });
-            modal.remove();
-            router();
-        } else {
-            document.getElementById('login-error').textContent = "Invalid credentials. Try the demo credentials.";
-        }
-    };
-}
-
-function showProductAddedPopup(productName) {
-    // Remove any existing popup
-    const oldPopup = document.getElementById('product-added-popup');
-    if (oldPopup) oldPopup.remove();
-
-    const popup = document.createElement('div');
-    popup.id = 'product-added-popup';
-    popup.textContent = `Product "${productName}" has been added successfully.`;
-    popup.style = `
-        position: fixed;
-        top: 30px;
-        right: 30px;
-        background: #28a745;
-        color: #fff;
-        padding: 1em 1.5em;
-        border-radius: 8px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-        font-size: 1.1em;
-        z-index: 2000;
-        opacity: 0.95;
-        transition: opacity 0.3s;
-    `;
-    document.body.appendChild(popup);
-
-    setTimeout(() => {
-        popup.style.opacity = '0';
-        setTimeout(() => popup.remove(), 500);
-    }, 1800);
-}
-
-// --- Enhanced Adobe Client Data Layer for Analytics ---
-
-// Utility to generate unique IDs for components/pages
-function generateId(prefix = "cmp") {
-    return prefix + "-" + Math.random().toString(36).substr(2, 10);
-}
-
-// Enhanced: Push page view event with more analytics-friendly fields
-function pushPageDataLayer(pageTitle, pageDesc, path = window.location.pathname) {
-    const pageId = generateId("page");
-    window.adobeDataLayer.push({
-        event: "pageView",
-        page: {
-            pageInfo: {
-                pageID: pageId,
-                pageName: pageTitle,
-                pageURL: window.location.href,
-                pagePath: path,
-                language: "en-US",
-                siteSection: "santos-ecomm",
-                siteSubsection: pageTitle.toLowerCase().replace(/\s/g, "-"),
-                server: window.location.hostname
-            },
-            attributes: {
-                description: pageDesc,
-                template: "/conf/santos/settings/wcm/templates/spa-template",
-                tags: [],
-                timestamp: new Date().toISOString()
-            }
-        }
-    });
-}
-
-// Enhanced: Push navigation event
-function pushNavDataLayer(label, url) {
-    const navId = generateId("nav");
-    window.adobeDataLayer.push({
-        event: "navigationClick",
-        navigation: {
-            navID: navId,
-            navLabel: label,
-            navURL: url,
-            timestamp: new Date().toISOString()
-        }
-    });
-}
-
-// Enhanced: Push product add-to-cart event with commerce fields
-function pushProductAddDataLayer(product) {
-    const cmpId = generateId("product");
-    window.adobeDataLayer.push({
-        event: "addToCart",
-        ecommerce: {
-            action: "add",
-            productList: [{
-                productID: product.id,
-                productName: product.name,
-                productDescription: product.desc,
-                price: product.price,
-                color: product.color,
-                imageURL: product.img,
-                quantity: 1
-            }],
-            cart: {
-                cartTotal: cart.reduce((sum, item) => sum + Number(item.price), 0),
-                cartCount: cart.length
-            }
-        },
-        attributes: {
-            timestamp: new Date().toISOString()
-        }
-    });
-}
-
-// Enhanced: Push cart view event
-function pushCartViewDataLayer() {
-    window.adobeDataLayer.push({
-        event: "cartView",
-        ecommerce: {
-            cart: {
-                cartTotal: cart.reduce((sum, item) => sum + Number(item.price), 0),
-                cartCount: cart.length,
-                products: cart.map(item => ({
-                    productID: item.id,
-                    productName: item.name,
-                    price: item.price,
-                    color: item.color,
-                    imageURL: item.img,
-                    quantity: 1
-                }))
-            }
-        },
-        attributes: {
-            timestamp: new Date().toISOString()
-        }
-    });
-}
-
-// Enhanced: Push product detail view event
-function pushProductDetailDataLayer(product) {
-    window.adobeDataLayer.push({
-        event: "productDetailView",
-        ecommerce: {
-            detail: {
-                productID: product.id,
-                productName: product.name,
-                productDescription: product.desc,
-                price: product.price,
-                color: product.color,
-                imageURL: product.img
-            }
-        },
-        attributes: {
-            timestamp: new Date().toISOString()
-        }
-    });
-}
-
-// --- Usage in SPA ---
-
-function router() {
-    const hash = window.location.hash || '#home';
-    if (hash.startsWith('#readmore-')) {
-        const pid = hash.replace('#readmore-', '');
-        const product = products.find(p => p.id == pid);
-        renderReadMore(pid);
-        updateNavUser();
-        pushPageDataLayer("Product Details", "Viewing product details");
-        if (product) pushProductDetailDataLayer(product);
-        return;
-    }
-    switch (hash) {
-        case '#home':
-            renderHome();
-            pushPageDataLayer("Home", "Welcome to santos e-comm");
-            break;
-        case '#cart':
-            renderCart();
-            pushPageDataLayer("Cart", "View your cart items");
-            pushCartViewDataLayer();
-            break;
-        case '#contact':
-            renderContact();
-            pushPageDataLayer("Contact", "Contact and GitHub info");
-            break;
-        default:
-            renderHome();
-            pushPageDataLayer("Home", "Welcome to santos e-comm");
-    }
-    // Update cart count on navigation
-    const cartCountSpan = document.getElementById('cart-count');
-    if (cartCountSpan) cartCountSpan.textContent = cart.length;
-    updateNavUser();
-}
-
-// Listen for hash changes to trigger router
-window.addEventListener('hashchange', router);
-
-// Call router and nav tracking on DOMContentLoaded
-document.addEventListener('DOMContentLoaded', () => {
-    router();
-    // Only call setupNavTracking() here if your nav is static!
-    // If nav is dynamic, call setupNavTracking() after rendering nav in updateNavUser()
-    updateCartCount();
-});
-
-// Utility to update cart count in nav
-function updateCartCount() {
-    cart = CartData.getCart(); // <-- always get latest cart
-    const cartCountSpan = document.getElementById('cart-count');
-    if (cartCountSpan) cartCountSpan.textContent = cart.length;
-}
-
-// Navigation click tracking
-function setupNavTracking() {
-    const navLinks = document.querySelectorAll('nav a');
-    navLinks.forEach(link => {
-        link.addEventListener('click', function (e) {
-            e.preventDefault(); // Prevent default navigation
-            const href = this.getAttribute('href');
-            if (window.location.hash !== href) {
-                window.location.hash = href; // This will trigger router()
-            } else {
-                router(); // If already on the same hash, force rerender
-            }
-            pushNavDataLayer(this.textContent, href);
-        });
-    });
-}
-
-function setupCartButtons() {
-    const buttons = document.querySelectorAll('.product button, article button[data-id], .add-to-cart-btn');
-    buttons.forEach(button => {
-        button.onclick = function () {
-            const id = parseInt(this.getAttribute('data-id'));
-            const product = products.find(p => p.id === id);
-            if (product) {
-                CartData.addToCart(product);
-                cart = CartData.getCart();
-                showProductAddedPopup(product.name);
-                pushProductAddDataLayer(product);
-                updateCartCount();
-            }
-        };
-    });
-}
-
-function setupRemoveButtons() {
-    const removeButtons = document.querySelectorAll('.remove-btn');
-    removeButtons.forEach(button => {
-        button.onclick = function () {
-            const idx = parseInt(this.getAttribute('data-idx'));
-            CartData.removeFromCart(idx);
-            cart = CartData.getCart();
-            renderCart();
-            updateCartCount();
-        };
-    });
-}
-
-// Update cart count after rendering nav/user
-function updateNavUser() {
-    // Render nav with login/logout
-    const nav = document.querySelector('nav');
-    if (!nav) return;
-    let navHtml = `
-        <a href="#home" id="nav-home">Home</a>
-        <a href="#cart" id="nav-cart">Cart <span id="cart-count">${cart.length}</span></a>
-        <a href="#contact" id="nav-contact">Contact</a>
-    `;
-    if (user) {
-        navHtml += `<span id="nav-user" style="margin-left:1em;">👤 ${user.email}</span>
-        <button id="logout-btn" style="margin-left:1em;">Logout</button>`;
-    } else {
-        navHtml += `<button id="login-btn" style="margin-left:1em;">Login</button>`;
-    }
-    nav.innerHTML = navHtml;
-    setupNavTracking();
-    updateCartCount();
-
-    // Attach login/logout handlers
-    const loginBtn = document.getElementById('login-btn');
-    if (loginBtn) {
-        loginBtn.onclick = showLoginModal;
-    }
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.onclick = logoutUser;
-    }
-}
-
-// Show login modal with demo credentials
-function showLoginModal() {
-    const modal = document.createElement('div');
-    modal.id = "login-modal";
-    modal.style = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;";
-    modal.innerHTML = `
-      <div style="background:#fff;padding:2em 2em 1em 2em;border-radius:8px;min-width:300px;max-width:90vw;position:relative;">
-        <h2>Login</h2>
-        <form id="email-login-form">
-          <input type="email" id="login-email" placeholder="Email" required style="width:100%;margin-bottom:0.5em;padding:0.5em;">
-          <input type="password" id="login-pass" placeholder="Password" required style="width:100%;margin-bottom:0.5em;padding:0.5em;">
-          <button type="submit" style="width:100%;background:#222;color:#fff;padding:0.5em 0;border:none;border-radius:4px;">Login</button>
-        </form>
-        <button id="close-login-modal" style="position:absolute;top:0.5em;right:0.5em;background:none;border:none;font-size:1.2em;">&times;</button>
-        <div id="login-error" style="color:red;margin-top:0.5em;"></div>
-        <div style="margin-top:1em;font-size:0.95em;color:#666;">
-            <b>Demo credentials:</b><br>
-            Email: <code>test@test.com</code><br>
-            Password: <code>test</code>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-
-    document.getElementById('close-login-modal').onclick = () => modal.remove();
-
-    document.getElementById('email-login-form').onsubmit = (e) => {
-        e.preventDefault();
-        const email = document.getElementById('login-email').value.trim();
-        const pass = document.getElementById('login-pass').value.trim();
-        if (email === "test@test.com" && pass === "test") {
-            saveUser({ email, provider: "demo" });
-            modal.remove();
-            router();
-        } else {
-            document.getElementById('login-error').textContent = "Invalid credentials. Try the demo credentials.";
+            document.getElementById('login-error').textContent = 
+                "Invalid credentials. Try the demo credentials.";
         }
     };
 }
