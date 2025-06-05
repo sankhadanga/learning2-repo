@@ -319,8 +319,60 @@ function renderReadMore(productId) {
 }
 
 function renderCart() {
-    // ...same as before...
-    // After rendering, send XDM cartView
+    const cartItems = CartManager.get();
+    const total = cartItems.reduce((sum, item) => sum + item.price, 0);
+    
+    let html = `
+        <section style="max-width:1200px;margin:0 auto;padding:2em;">
+            <h1 style="font-size:2em;margin-bottom:1em;color:#222;">Shopping Cart</h1>
+            ${cartItems.length === 0 ? `
+                <div style="text-align:center;padding:2em;background:#fff;border-radius:12px;box-shadow:0 2px 4px rgba(0,0,0,0.08);">
+                    <p style="color:#666;margin-bottom:1em;">Your cart is empty</p>
+                    <a href="#home" style="color:#222;text-decoration:none;padding:0.5em 1em;border:2px solid #222;border-radius:4px;">
+                        Continue Shopping
+                    </a>
+                </div>
+            ` : `
+                <div class="cart-items" style="background:#fff;border-radius:12px;box-shadow:0 2px 4px rgba(0,0,0,0.08);overflow:hidden;">
+                    ${cartItems.map((item, idx) => `
+                        <div class="cart-item" style="display:flex;align-items:center;padding:1em;border-bottom:1px solid #eee;">
+                            <img src="${item.img}" alt="${item.name}" style="width:100px;height:100px;object-fit:cover;border-radius:8px;margin-right:1em;">
+                            <div style="flex:1;">
+                                <h3 style="margin:0 0 0.5em;color:#222;">${item.name}</h3>
+                                <p style="color:#666;margin:0;">Color: ${item.color}</p>
+                                <p style="color:#222;font-weight:bold;margin:0.5em 0;">₹${item.price}</p>
+                            </div>
+                            <button class="remove-btn" data-idx="${idx}"
+                                    style="background:none;border:none;color:#ff4444;cursor:pointer;padding:0.5em;">
+                                Remove
+                            </button>
+                        </div>
+                    `).join('')}
+                    <div style="padding:1em;background:#f8f9fa;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:1.2em;color:#222;">Total: ₹${total.toFixed(2)}</span>
+                        <button id="checkout-btn" 
+                                style="background:#222;color:#fff;padding:0.8em 2em;border:none;border-radius:6px;cursor:pointer;">
+                            Checkout
+                        </button>
+                    </div>
+                </div>
+            `}
+        </section>
+    `;
+    
+    document.getElementById('app-content').innerHTML = html;
+    
+    // Setup remove buttons
+    document.querySelectorAll('.remove-btn').forEach(button => {
+        button.onclick = function() {
+            const idx = parseInt(this.getAttribute('data-idx'));
+            CartManager.remove(idx);
+            cart = CartManager.get();
+            renderCart();
+            updateCartCount();
+        };
+    });
+
     pushXdmToAlloy(XDM.pageView("Cart", "View your cart items", window.location.pathname), ["cart"]);
     pushXdmToAlloy(XDM.cartView(cart), ["cart"]);
 }
@@ -374,8 +426,8 @@ function router() {
 
 // --- UI Event Setup (unchanged, but call XDM on actions) ---
 function setupCartButtons() {
-    document.querySelectorAll('.product button[data-id], .add-to-cart-btn').forEach(button => {
-        button.onclick = async function() {
+    document.querySelectorAll('[data-id]').forEach(button => {
+        button.onclick = function() {
             button.disabled = true;
             try {
                 const id = parseInt(this.getAttribute('data-id'));
@@ -386,7 +438,6 @@ function setupCartButtons() {
                     showProductAddedPopup(product.name);
                     pushXdmToAlloy(XDM.addToCart(product, cart));
                     updateCartCount();
-                    updateNavUser();
                 }
             } catch (error) {
                 console.error('Error adding to cart:', error);
@@ -432,3 +483,28 @@ document.addEventListener('DOMContentLoaded', () => {
     router();
     updateCartCount();
 });
+
+function showProductAddedPopup(productName) {
+    const popup = document.createElement('div');
+    popup.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #222;
+        color: #fff;
+        padding: 1em 2em;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+    `;
+    popup.textContent = `${productName} added to cart`;
+    document.body.appendChild(popup);
+    setTimeout(() => popup.remove(), 3000);
+}
+
+function updateCartCount() {
+    const cartCount = document.getElementById('cart-count');
+    if (cartCount) {
+        cartCount.textContent = CartManager.get().length;
+    }
+}
