@@ -47,6 +47,8 @@ nav a, nav button {
     flex-wrap: wrap;
     justify-content: center;
     margin: 2rem 0;
+    margin-bottom: 1em;  /* Add space before footer */
+    min-height: calc(100vh - 150px);  /* Ensure content area fills viewport */
 }
 
 .product {
@@ -90,26 +92,25 @@ nav a, nav button {
 }
 
 footer {
-    text-align: center;
-    padding: 2em;
-    color: #666;
+    position: relative;  /* Change from fixed/absolute if it was */
+    bottom: 0;
+    width: 100%;
     background: #222;
     color: #fff;
+    padding: 0.5em;
     text-align: center;
-    padding: 1rem;
-    position: fixed;
-    width: 100%;
-    bottom: 0;
-    left: 0;
+    font-size: 0.8em;
+    line-height: 1.2;
+    margin-top: auto;
 }
 
-#app-content {
-    min-height: 80vh;
+footer div {
+    margin: 0;
 }
 
 /* Target personalization styles */
 .target-offer {
-    border: 2px solid #007bff;
+    border: 1px solid #007bff;
     padding: 1em;
     margin: 1em 0;
     border-radius: var(--border-radius);
