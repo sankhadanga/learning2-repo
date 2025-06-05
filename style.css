@@ -6,8 +6,12 @@
     --shadow: 0 2px 4px rgba(0,0,0,0.08);
 }
 
-body {
+html, body {
+    height: 100%;
     margin: 0;
+}
+
+body {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--bg-color);
     color: var(--text-color);
@@ -91,17 +95,21 @@ nav a, nav button {
     background: #218838;
 }
 
+.page-wrapper {
+    min-height: 100%;
+    margin-bottom: -50px; /* Equal to footer height */
+    padding-bottom: 50px; /* Equal to footer height */
+}
+
 footer {
-    position: relative;  /* Change from fixed/absolute if it was */
-    bottom: 0;
-    width: 100%;
+    height: 50px;
     background: #222;
     color: #fff;
-    padding: 0.5em;
     text-align: center;
     font-size: 0.8em;
     line-height: 1.2;
-    margin-top: auto;
+    position: relative;
+    padding: 0.5em;
 }
 
 footer div {
@@ -114,4 +122,8 @@ footer div {
     padding: 1em;
     margin: 1em 0;
     border-radius: var(--border-radius);
+}
+
+#app-content {
+    min-height: calc(100vh - 180px); /* Adjust based on header + nav + footer height */
 }
