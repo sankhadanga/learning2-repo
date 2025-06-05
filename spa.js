@@ -421,7 +421,7 @@ function renderContact() {
                     <strong>GitHub:</strong><br>
                     <a href="https://github.com/sankhadanga/learning2-repo" target="_blank" 
                        style="color:#0366d6;text-decoration:none;">
-                        github.com/sankhadanga
+                        Click here to access the Git hub repo
                     </a>
                 </p>
             </div>
