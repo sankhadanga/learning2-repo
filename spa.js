@@ -1,16 +1,82 @@
 // --- Data Layer for santos e-comm SPA ---
 
-// Product Data Layer
+// 1. Initialize Adobe Data Layer
+window.adobeDataLayer = window.adobeDataLayer || [];
+
+// 2. Consolidated Data Layer
 const DataLayer = {
     getProducts() {
-        // Returns a copy to prevent direct mutation
         return [...products];
     },
     getProductById(id) {
-        return products.find(p => p.id === Number(id)) || null;
+        const numId = Number(id);
+        return isNaN(numId) ? null : products.find(p => p.id === numId) || null;
     },
     getColors() {
         return [...new Set(products.map(p => p.color))];
+    }
+};
+
+// 3. Storage Manager with Error Handling
+const SafeStorage = {
+    get(key) {
+        try {
+            return JSON.parse(localStorage.getItem(key));
+        } catch (e) {
+            console.error(`Error reading ${key}:`, e);
+            return null;
+        }
+    },
+    set(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch (e) {
+            console.error(`Error saving ${key}:`, e);
+        }
+    },
+    remove(key) {
+        try {
+            localStorage.removeItem(key);
+        } catch (e) {
+            console.error(`Error removing ${key}:`, e);
+        }
+    }
+};
+
+// 4. Cart Manager
+const CartManager = {
+    addToCart(product) {
+        try {
+            CartData.addToCart(product);
+            cart = CartData.getCart();
+            this.updateUI(product);
+            return true;
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            return false;
+        }
+    },
+    removeFromCart(idx) {
+        try {
+            CartData.removeFromCart(idx);
+            cart = CartData.getCart();
+            renderCart();
+            this.updateCount();
+            return true;
+        } catch (error) {
+            console.error('Error removing from cart:', error);
+            return false;
+        }
+    },
+    updateUI(product) {
+        this.updateCount();
+        showProductAddedPopup(product.name);
+        pushProductAddDataLayer(product);
+    },
+    updateCount() {
+        cart = CartData.getCart();
+        const cartCountSpan = document.getElementById('cart-count');
+        if (cartCountSpan) cartCountSpan.textContent = cart.length;
     }
 };
 
@@ -400,16 +466,16 @@ const UserManager = {
     saveUser(userObj) {
         UserData.setUser(userObj);
         user = userObj;
-        router();
         pushLoginDataLayer(userObj.email);
+        router();
     },
     logoutUser() {
         UserData.clearUser();
-        user = null;
         CartData.clearCart();
+        user = null;
         cart = [];
-        router();
         pushLogoutDataLayer();
+        router();
     }
 };
 
@@ -692,16 +758,16 @@ function setupNavTracking() {
 function setupCartButtons() {
     const buttons = document.querySelectorAll('.product button[data-id], .add-to-cart-btn');
     buttons.forEach(button => {
-        button.onclick = function() {
-            const id = parseInt(this.getAttribute('data-id'));
-            const product = DataLayer.getProductById(id);
-            if (product) {
-                CartData.addToCart(product);
-                cart = CartData.getCart();
-                showProductAddedPopup(product.name);
-                pushProductAddDataLayer(product);
-                updateCartCount();
-                updateNavUser();
+        button.onclick = async function() {
+            button.disabled = true;
+            try {
+                const id = parseInt(this.getAttribute('data-id'));
+                const product = DataLayer.getProductById(id);
+                if (product) {
+                    CartManager.addToCart(product);
+                }
+            } finally {
+                button.disabled = false;
             }
         };
     });
@@ -714,42 +780,11 @@ function setupRemoveButtons() {
             const idx = parseInt(this.getAttribute('data-idx'));
             CartData.removeFromCart(idx);
             cart = CartData.getCart();
-            renderCart();
             updateCartCount();
             updateNavUser();
+            renderCart();
         };
     });
-}
-
-// Update cart count after rendering nav/user
-function updateNavUser() {
-    // Render nav with login/logout
-    const nav = document.querySelector('nav');
-    if (!nav) return;
-    let navHtml = `
-        <a href="#home" id="nav-home">Home</a>
-        <a href="#cart" id="nav-cart">Cart <span id="cart-count">${cart.length}</span></a>
-        <a href="#contact" id="nav-contact">Contact</a>
-    `;
-    if (user) {
-        navHtml += `<span id="nav-user" style="margin-left:1em;">👤 ${user.email}</span>
-        <button id="logout-btn" style="margin-left:1em;">Logout</button>`;
-    } else {
-        navHtml += `<button id="login-btn" style="margin-left:1em;">Login</button>`;
-    }
-    nav.innerHTML = navHtml;
-    setupNavTracking();
-    updateCartCount();
-
-    // Attach login/logout handlers
-    const loginBtn = document.getElementById('login-btn');
-    if (loginBtn) {
-        loginBtn.onclick = showLoginModal;
-    }
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.onclick = logoutUser;
-    }
 }
 
 // Show login modal with demo credentials
