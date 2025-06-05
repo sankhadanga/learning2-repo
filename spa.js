@@ -450,18 +450,67 @@ function setupCartButtons() {
 
 // --- Login Modal ---
 function showLoginModal() {
-    // ...same as before...
+    const modal = document.createElement('div');
+    modal.id = "login-modal";
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background:#fff;padding:2em;border-radius:8px;min-width:300px;max-width:90vw;position:relative;">
+            <h2 style="margin:0 0 1em;">Login</h2>
+            <form id="email-login-form">
+                <input type="email" id="login-email" placeholder="Email" required 
+                       style="width:100%;padding:0.5em;margin-bottom:1em;border:1px solid #ddd;border-radius:4px;">
+                <input type="password" id="login-pass" placeholder="Password" required 
+                       style="width:100%;padding:0.5em;margin-bottom:1em;border:1px solid #ddd;border-radius:4px;">
+                <button type="submit" style="width:100%;background:#222;color:#fff;padding:0.8em;border:none;border-radius:4px;cursor:pointer;">
+                    Login
+                </button>
+            </form>
+            <button id="close-login-modal" style="position:absolute;top:1em;right:1em;background:none;border:none;font-size:1.2em;cursor:pointer;">×</button>
+            <div id="login-error" style="color:#ff4444;margin-top:1em;"></div>
+            <div style="margin-top:1em;color:#666;">
+                <strong>Demo Login:</strong><br>
+                Email: test@test.com<br>
+                Password: test
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close modal on background click
+    modal.addEventListener('click', e => {
+        if (e.target.id === 'login-modal') modal.remove();
+    });
+
+    // Close button handler
+    document.getElementById('close-login-modal').onclick = () => modal.remove();
+
+    // Login form submission
     document.getElementById('email-login-form').onsubmit = e => {
         e.preventDefault();
         const email = document.getElementById('login-email').value.trim();
         const pass = document.getElementById('login-pass').value.trim();
+        
         if (email === "test@test.com" && pass === "test") {
             UserManager.set({ email, provider: "demo" });
             pushXdmToAlloy(XDM.login(email));
             modal.remove();
             router();
         } else {
-            document.getElementById('login-error').textContent = "Invalid credentials. Try the demo credentials.";
+            document.getElementById('login-error').textContent = 
+                "Invalid credentials. Try the demo credentials.";
         }
     };
 }
