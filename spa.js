@@ -447,6 +447,9 @@ function setupCartButtons() {
 
 // --- Login Modal ---
 function showLoginModal() {
+    const existingModal = document.getElementById('login-modal');
+    if (existingModal) existingModal.remove();
+
     const modal = document.createElement('div');
     modal.id = "login-modal";
     modal.style.cssText = `
@@ -486,16 +489,14 @@ function showLoginModal() {
 
     document.body.appendChild(modal);
 
-    // Close modal on background click
+    // Update event handlers
     modal.addEventListener('click', e => {
         if (e.target.id === 'login-modal') modal.remove();
     });
 
-    // Close button handler
-    document.getElementById('close-login-modal').onclick = () => modal.remove();
+    document.getElementById('close-login-modal').addEventListener('click', () => modal.remove());
 
-    // Login form submission
-    document.getElementById('email-login-form').onsubmit = e => {
+    document.getElementById('email-login-form').addEventListener('submit', e => {
         e.preventDefault();
         const email = document.getElementById('login-email').value.trim();
         const pass = document.getElementById('login-pass').value.trim();
@@ -509,10 +510,10 @@ function showLoginModal() {
             document.getElementById('login-error').textContent = 
                 "Invalid credentials. Try the demo credentials.";
         }
-    };
+    });
 }
 
-// --- Logout (in updateNavUser) ---
+// Update the nav user function to properly attach login/logout handlers
 function updateNavUser() {
     const nav = document.querySelector('nav');
     if (!nav) return;
@@ -530,6 +531,23 @@ function updateNavUser() {
             : `<button id="login-btn">Login</button>`
         }
     `;
+
+    // Attach handlers after updating innerHTML
+    const loginBtn = document.getElementById('login-btn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', showLoginModal);
+    }
+
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            UserManager.clear();
+            cart = [];
+            CartManager.clear();
+            pushXdmToAlloy(XDM.logout());
+            router();
+        });
+    }
 }
 
 // --- SPA Initialization ---
