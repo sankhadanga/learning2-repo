@@ -599,6 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Utility to update cart count in nav
 function updateCartCount() {
+    cart = CartData.getCart(); // <-- always get latest cart
     const cartCountSpan = document.getElementById('cart-count');
     if (cartCountSpan) cartCountSpan.textContent = cart.length;
 }
@@ -636,10 +637,10 @@ function setupCartButtons() {
             const product = products.find(p => p.id === id);
             if (product) {
                 CartData.addToCart(product);
-                cart = CartData.getCart();
+                cart = CartData.getCart(); // <-- sync global cart variable
                 showProductAddedPopup(product.name);
                 pushProductAddDataLayer(product);
-                updateCartCount();
+                updateCartCount(); // <-- update cart count in nav
             }
         };
     });
