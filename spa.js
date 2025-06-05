@@ -245,7 +245,7 @@ function renderHome() {
     
     filtered.forEach(product => {
         html += `
-            <article class="product" style="background:#fff;border-radius:12px;padding:1.5em;box-shadow:0 2px 4px rgba(0,0,0,0.08);display:flex;flex-direction:column;">
+            <article class="product" style="background:#fff;border-radius:12px;padding:1.5em;box-shadow:0 2px 4px rgba(0,0,0,0.08);display:flex;flex-direction:column;position:relative;">
                 <a href="#readmore-${product.id}" class="product-img-link" style="display:block;margin-bottom:1em;">
                     <img src="${product.img}" alt="${product.name}" 
                          style="width:100%;height:200px;object-fit:cover;border-radius:8px;transition:transform 0.2s;"
@@ -263,9 +263,6 @@ function renderHome() {
                         Add to Cart
                     </button>
                 </div>
-                <span class="badge" style="position:absolute;top:1em;right:1em;background:${product.color.toLowerCase()};color:#fff;padding:4px 12px;border-radius:4px;font-size:0.8em;">
-                    ${product.color}
-                </span>
             </article>
         `;
     });
