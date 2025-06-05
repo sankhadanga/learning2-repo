@@ -622,3 +622,24 @@ function updateCartCount() {
         cartCount.textContent = CartManager.get().length;
     }
 }
+
+// --- Image Loader Utility ---
+const ImageLoader = {
+    preloadCache: new Set(),
+    preload(url) {
+        if (this.preloadCache.has(url)) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                this.preloadCache.add(url);
+                resolve();
+            };
+            img.onerror = reject;
+            img.src = url;
+        });
+    },
+    getOptimizedUrl(url, width = 400) {
+        // Add image optimization parameters for Unsplash
+        return `${url}?w=${width}&q=75&auto=format`;
+    }
+};
